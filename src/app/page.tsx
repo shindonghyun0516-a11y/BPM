@@ -277,7 +277,7 @@ export default function Home() {
         <p className="eyebrow">Mobile Web V0</p>
         <h1 id="page-title">BPM 자동 측정</h1>
         <p className="summary">
-          마이크 입력을 브라우저 안에서만 분석해 약 10초 동안 BPM 후보를 추정합니다.
+          마이크 입력을 브라우저 안에서만 분석해 약 20초 동안 BPM 후보를 추정합니다.
           오디오는 저장하거나 서버로 전송하지 않습니다.
         </p>
       </section>

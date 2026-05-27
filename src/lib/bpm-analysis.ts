@@ -5,7 +5,7 @@ import type {
   EnergySample
 } from "@/types/app";
 
-export const MEASUREMENT_DURATION_MS = 10_000;
+export const MEASUREMENT_DURATION_MS = 20_000;
 export const ENERGY_SAMPLE_INTERVAL_MS = 50;
 export const MIN_SIGNAL_THRESHOLD = 0.006;
 export const MIN_SIGNAL_VARIATION = 0.0025;
