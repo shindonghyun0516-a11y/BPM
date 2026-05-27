@@ -1,14 +1,15 @@
 import type {
+  BpmAnalysisDiagnostics,
   BpmAnalysisOutcome,
   BpmCandidate,
   ConfidenceLevel,
   EnergySample
 } from "@/types/app";
 
-export const MEASUREMENT_DURATION_MS = 10_000;
+export const MEASUREMENT_DURATION_MS = 20_000;
 export const ENERGY_SAMPLE_INTERVAL_MS = 50;
-export const MIN_SIGNAL_THRESHOLD = 0.018;
-export const MIN_SIGNAL_VARIATION = 0.008;
+export const MIN_SIGNAL_THRESHOLD = 0.006;
+export const MIN_SIGNAL_VARIATION = 0.0025;
 export const MIN_ONSET_COUNT = 4;
 export const DEFAULT_BPM_RANGE_MIN = 10;
 export const DEFAULT_BPM_RANGE_MAX = 500;
@@ -36,9 +37,29 @@ export function calculateSignalEnergy(frame: Uint8Array<ArrayBufferLike>): numbe
   return Math.sqrt(sum / frame.length);
 }
 
+export function calculateSignalPeak(frame: Uint8Array<ArrayBufferLike>): number {
+  if (frame.length === 0) {
+    return 0;
+  }
+
+  let peak = 0;
+
+  for (const value of frame) {
+    const centered = Math.abs((value - 128) / 128);
+    peak = Math.max(peak, centered);
+  }
+
+  return peak;
+}
+
 export function analyzeEnergySamples(samples: EnergySample[]): BpmAnalysisOutcome {
+  const baseDiagnostics = buildDiagnostics(samples, "none");
+
   if (samples.length < MIN_ONSET_COUNT) {
-    return unstable("분석할 신호가 충분하지 않습니다.");
+    return unstable(
+      "분석할 신호가 충분하지 않습니다.",
+      buildDiagnostics(samples, "samples")
+    );
   }
 
   const firstSample = samples[0];
@@ -46,7 +67,11 @@ export function analyzeEnergySamples(samples: EnergySample[]): BpmAnalysisOutcom
   const durationMs = lastSample.timestampMs - firstSample.timestampMs;
 
   if (durationMs < MIN_ANALYSIS_DURATION_MS) {
-    return unstable("측정 시간이 충분하지 않습니다.");
+    return unstable("측정 시간이 충분하지 않습니다.", {
+      ...baseDiagnostics,
+      durationMs,
+      failureStage: "duration"
+    });
   }
 
   const energies = samples.map((sample) => sample.energy);
@@ -55,27 +80,45 @@ export function analyzeEnergySamples(samples: EnergySample[]): BpmAnalysisOutcom
   const maxEnergy = Math.max(...energies);
   const signalVariation = maxEnergy - minEnergy;
   const energyStdDev = standardDeviation(energies, meanEnergy);
+  const signalDetectedCount = energies.filter((energy) => energy >= MIN_SIGNAL_THRESHOLD).length;
+  const signalDiagnostics = buildDiagnostics(samples, "signal", {
+    durationMs,
+    meanEnergy,
+    maxEnergy,
+    signalVariation,
+    signalDetectedCount
+  });
 
   if (maxEnergy < MIN_SIGNAL_THRESHOLD || signalVariation < MIN_SIGNAL_VARIATION) {
-    return unstable("입력 신호가 너무 작거나 변화가 부족합니다.");
+    return unstable("입력 신호가 너무 작거나 변화가 부족합니다.", signalDiagnostics);
   }
 
   const onsetThreshold =
     meanEnergy +
     Math.max(energyStdDev * ONSET_STDDEV_WEIGHT, signalVariation * ONSET_VARIATION_WEIGHT);
   const onsetTimes = findOnsetTimes(samples, onsetThreshold);
+  const onsetDiagnostics = {
+    ...signalDiagnostics,
+    onsetCandidateCount: onsetTimes.length,
+    failureStage: "onset" as const
+  };
 
   if (onsetTimes.length < MIN_ONSET_COUNT) {
-    return unstable("박자 후보가 충분하지 않습니다.");
+    return unstable("박자 후보가 충분하지 않습니다.", onsetDiagnostics);
   }
 
   const intervals = buildIntervals(onsetTimes).filter((intervalMs) => {
     const bpm = 60_000 / intervalMs;
     return bpm >= DEFAULT_BPM_RANGE_MIN && bpm <= DEFAULT_BPM_RANGE_MAX;
   });
+  const candidateDiagnostics = {
+    ...onsetDiagnostics,
+    bpmCandidateCount: intervals.length,
+    failureStage: "bpm-candidates" as const
+  };
 
   if (intervals.length < MIN_ONSET_COUNT - 1) {
-    return unstable("BPM 범위 안에서 안정적인 간격을 찾지 못했습니다.");
+    return unstable("BPM 범위 안에서 안정적인 간격을 찾지 못했습니다.", candidateDiagnostics);
   }
 
   const medianInterval = median(intervals);
@@ -86,13 +129,19 @@ export function analyzeEnergySamples(samples: EnergySample[]): BpmAnalysisOutcom
     recommendedBpm > DEFAULT_BPM_RANGE_MAX ||
     !Number.isFinite(recommendedBpm)
   ) {
-    return unstable("BPM 후보가 허용 범위를 벗어났습니다.");
+    return unstable("BPM 후보가 허용 범위를 벗어났습니다.", {
+      ...candidateDiagnostics,
+      failureStage: "bpm-range"
+    });
   }
 
   const intervalStability = calculateIntervalStability(intervals, medianInterval);
 
   if (intervalStability < MIN_INTERVAL_STABILITY) {
-    return unstable("박자 간격이 너무 불규칙합니다.");
+    return unstable("박자 간격이 너무 불규칙합니다.", {
+      ...candidateDiagnostics,
+      failureStage: "stability"
+    });
   }
 
   const signalScore = clamp(signalVariation / 0.08, 0, 1);
@@ -102,13 +151,19 @@ export function analyzeEnergySamples(samples: EnergySample[]): BpmAnalysisOutcom
     0,
     1
   );
+  const candidates = buildBpmCandidates(recommendedBpm);
 
   return {
     kind: "result",
     recommendedBpm,
-    candidates: buildBpmCandidates(recommendedBpm),
+    candidates,
     confidence: getConfidenceLevel(confidenceScore),
-    confidenceScore
+    confidenceScore,
+    diagnostics: {
+      ...candidateDiagnostics,
+      bpmCandidateCount: candidates.length,
+      failureStage: "none"
+    }
   };
 }
 
@@ -187,10 +242,44 @@ function calculateIntervalStability(intervals: number[], medianInterval: number)
   return clamp(1 - variationRatio / 0.35, 0, 1);
 }
 
-function unstable(reason: string): BpmAnalysisOutcome {
+function unstable(
+  reason: string,
+  diagnostics: BpmAnalysisDiagnostics = buildDiagnostics([], "none")
+): BpmAnalysisOutcome {
   return {
     kind: "unstable-result",
-    reason
+    reason,
+    diagnostics
+  };
+}
+
+function buildDiagnostics(
+  samples: EnergySample[],
+  failureStage: BpmAnalysisDiagnostics["failureStage"],
+  overrides: Partial<BpmAnalysisDiagnostics> = {}
+): BpmAnalysisDiagnostics {
+  const energies = samples.map((sample) => sample.energy);
+  const peaks = samples.map((sample) => sample.peak);
+  const firstSample = samples[0];
+  const lastSample = samples[samples.length - 1];
+  const durationMs =
+    firstSample && lastSample ? Math.max(0, lastSample.timestampMs - firstSample.timestampMs) : 0;
+  const meanEnergyValue = energies.length > 0 ? mean(energies) : 0;
+  const maxEnergyValue = energies.length > 0 ? Math.max(...energies) : 0;
+  const minEnergyValue = energies.length > 0 ? Math.min(...energies) : 0;
+
+  return {
+    sampleCount: samples.length,
+    durationMs,
+    meanEnergy: meanEnergyValue,
+    maxEnergy: maxEnergyValue,
+    maxPeak: peaks.length > 0 ? Math.max(...peaks) : 0,
+    signalVariation: maxEnergyValue - minEnergyValue,
+    signalDetectedCount: energies.filter((energy) => energy >= MIN_SIGNAL_THRESHOLD).length,
+    onsetCandidateCount: 0,
+    bpmCandidateCount: 0,
+    failureStage,
+    ...overrides
   };
 }
 
