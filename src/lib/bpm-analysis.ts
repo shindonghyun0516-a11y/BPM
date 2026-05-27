@@ -7,19 +7,22 @@ import type {
 
 export const MEASUREMENT_DURATION_MS = 10_000;
 export const ENERGY_SAMPLE_INTERVAL_MS = 50;
-export const MIN_SIGNAL_THRESHOLD = 0.018;
-export const MIN_SIGNAL_VARIATION = 0.008;
-export const MIN_ONSET_COUNT = 4;
+export const MIN_SIGNAL_THRESHOLD = 0.006;
+export const MIN_SIGNAL_VARIATION = 0.0025;
+export const MIN_ONSET_COUNT = 3;
 export const DEFAULT_BPM_RANGE_MIN = 10;
 export const DEFAULT_BPM_RANGE_MAX = 500;
 export const CONFIDENCE_LOW_THRESHOLD = 0.38;
 export const CONFIDENCE_MEDIUM_THRESHOLD = 0.68;
 
 const MIN_ANALYSIS_DURATION_MS = 5_000;
-const MIN_ONSET_GAP_MS = 120;
-const ONSET_STDDEV_WEIGHT = 0.55;
-const ONSET_VARIATION_WEIGHT = 0.35;
-const MIN_INTERVAL_STABILITY = 0.18;
+const MIN_ONSET_GAP_MS = 160;
+const ONSET_STDDEV_WEIGHT = 0.35;
+const ONSET_VARIATION_WEIGHT = 0.22;
+const MIN_INTERVAL_STABILITY = 0.12;
+const MIN_TEMPO_INTERVAL_MS = 120;
+const MAX_TEMPO_INTERVAL_MS = 6_000;
+const MAX_INTERVAL_SKIP = 4;
 
 export function calculateSignalEnergy(frame: Uint8Array<ArrayBufferLike>): number {
   if (frame.length === 0) {
@@ -60,26 +63,27 @@ export function analyzeEnergySamples(samples: EnergySample[]): BpmAnalysisOutcom
     return unstable("입력 신호가 너무 작거나 변화가 부족합니다.");
   }
 
+  const smoothedSamples = smoothEnergySamples(samples);
   const onsetThreshold =
     meanEnergy +
-    Math.max(energyStdDev * ONSET_STDDEV_WEIGHT, signalVariation * ONSET_VARIATION_WEIGHT);
-  const onsetTimes = findOnsetTimes(samples, onsetThreshold);
+    Math.max(
+      energyStdDev * ONSET_STDDEV_WEIGHT,
+      signalVariation * ONSET_VARIATION_WEIGHT,
+      MIN_SIGNAL_VARIATION
+    );
+  const onsetTimes = findOnsetTimes(smoothedSamples, onsetThreshold, signalVariation);
 
   if (onsetTimes.length < MIN_ONSET_COUNT) {
     return unstable("박자 후보가 충분하지 않습니다.");
   }
 
-  const intervals = buildIntervals(onsetTimes).filter((intervalMs) => {
-    const bpm = 60_000 / intervalMs;
-    return bpm >= DEFAULT_BPM_RANGE_MIN && bpm <= DEFAULT_BPM_RANGE_MAX;
-  });
+  const tempoEstimate = estimateTempoFromOnsets(onsetTimes);
 
-  if (intervals.length < MIN_ONSET_COUNT - 1) {
+  if (!tempoEstimate) {
     return unstable("BPM 범위 안에서 안정적인 간격을 찾지 못했습니다.");
   }
 
-  const medianInterval = median(intervals);
-  const recommendedBpm = Math.round(60_000 / medianInterval);
+  const recommendedBpm = tempoEstimate.bpm;
 
   if (
     recommendedBpm < DEFAULT_BPM_RANGE_MIN ||
@@ -89,16 +93,14 @@ export function analyzeEnergySamples(samples: EnergySample[]): BpmAnalysisOutcom
     return unstable("BPM 후보가 허용 범위를 벗어났습니다.");
   }
 
-  const intervalStability = calculateIntervalStability(intervals, medianInterval);
-
-  if (intervalStability < MIN_INTERVAL_STABILITY) {
+  if (tempoEstimate.stability < MIN_INTERVAL_STABILITY) {
     return unstable("박자 간격이 너무 불규칙합니다.");
   }
 
-  const signalScore = clamp(signalVariation / 0.08, 0, 1);
-  const onsetScore = clamp(onsetTimes.length / 14, 0, 1);
+  const signalScore = clamp(signalVariation / 0.045, 0, 1);
+  const onsetScore = clamp(onsetTimes.length / 10, 0, 1);
   const confidenceScore = clamp(
-    intervalStability * 0.45 + signalScore * 0.35 + onsetScore * 0.2,
+    tempoEstimate.stability * 0.45 + signalScore * 0.35 + onsetScore * 0.2,
     0,
     1
   );
@@ -112,9 +114,26 @@ export function analyzeEnergySamples(samples: EnergySample[]): BpmAnalysisOutcom
   };
 }
 
-function findOnsetTimes(samples: EnergySample[], threshold: number): number[] {
+function smoothEnergySamples(samples: EnergySample[]): EnergySample[] {
+  return samples.map((sample, index) => {
+    const previous = samples[index - 1]?.energy ?? sample.energy;
+    const next = samples[index + 1]?.energy ?? sample.energy;
+
+    return {
+      timestampMs: sample.timestampMs,
+      energy: (previous + sample.energy + next) / 3
+    };
+  });
+}
+
+function findOnsetTimes(
+  samples: EnergySample[],
+  threshold: number,
+  signalVariation: number
+): number[] {
   const onsetTimes: number[] = [];
   let lastOnsetTime = -Infinity;
+  const minimumPeakProminence = Math.max(signalVariation * 0.12, MIN_SIGNAL_VARIATION * 0.6);
 
   for (let index = 1; index < samples.length - 1; index += 1) {
     const previous = samples[index - 1];
@@ -122,8 +141,14 @@ function findOnsetTimes(samples: EnergySample[], threshold: number): number[] {
     const next = samples[index + 1];
     const isPeak = current.energy >= previous.energy && current.energy > next.energy;
     const hasEnoughGap = current.timestampMs - lastOnsetTime >= MIN_ONSET_GAP_MS;
+    const peakProminence = current.energy - Math.min(previous.energy, next.energy);
 
-    if (current.energy >= threshold && isPeak && hasEnoughGap) {
+    if (
+      current.energy >= threshold &&
+      isPeak &&
+      hasEnoughGap &&
+      peakProminence >= minimumPeakProminence
+    ) {
       onsetTimes.push(current.timestampMs);
       lastOnsetTime = current.timestampMs;
     }
@@ -132,14 +157,51 @@ function findOnsetTimes(samples: EnergySample[], threshold: number): number[] {
   return onsetTimes;
 }
 
-function buildIntervals(onsetTimes: number[]): number[] {
-  const intervals: number[] = [];
+function estimateTempoFromOnsets(
+  onsetTimes: number[]
+): { bpm: number; stability: number } | null {
+  const scores = new Map<number, number>();
 
-  for (let index = 1; index < onsetTimes.length; index += 1) {
-    intervals.push(onsetTimes[index] - onsetTimes[index - 1]);
+  for (let startIndex = 0; startIndex < onsetTimes.length; startIndex += 1) {
+    for (
+      let skip = 1;
+      skip <= MAX_INTERVAL_SKIP && startIndex + skip < onsetTimes.length;
+      skip += 1
+    ) {
+      const intervalMs = onsetTimes[startIndex + skip] - onsetTimes[startIndex];
+
+      if (intervalMs < MIN_TEMPO_INTERVAL_MS || intervalMs > MAX_TEMPO_INTERVAL_MS) {
+        continue;
+      }
+
+      const bpm = Math.round(60_000 / intervalMs);
+
+      if (bpm < DEFAULT_BPM_RANGE_MIN || bpm > DEFAULT_BPM_RANGE_MAX) {
+        continue;
+      }
+
+      const bucket = Math.round(bpm / 2) * 2;
+      const skipWeight = 1 / skip;
+      scores.set(bucket, (scores.get(bucket) ?? 0) + skipWeight);
+    }
   }
 
-  return intervals;
+  if (scores.size === 0) {
+    return null;
+  }
+
+  const rankedScores = [...scores.entries()].sort((first, second) => second[1] - first[1]);
+  const [bestBpm, bestScore] = rankedScores[0];
+  const totalScore = rankedScores.reduce((total, [, score]) => total + score, 0);
+
+  if (!Number.isFinite(bestBpm) || totalScore === 0) {
+    return null;
+  }
+
+  return {
+    bpm: bestBpm,
+    stability: clamp(bestScore / totalScore, 0, 1)
+  };
 }
 
 function buildBpmCandidates(recommendedBpm: number): BpmCandidate[] {
@@ -179,14 +241,6 @@ function getConfidenceLevel(score: number): ConfidenceLevel {
   return "높음";
 }
 
-function calculateIntervalStability(intervals: number[], medianInterval: number): number {
-  const differences = intervals.map((interval) => Math.abs(interval - medianInterval));
-  const medianDifference = median(differences);
-  const variationRatio = medianDifference / medianInterval;
-
-  return clamp(1 - variationRatio / 0.35, 0, 1);
-}
-
 function unstable(reason: string): BpmAnalysisOutcome {
   return {
     kind: "unstable-result",
@@ -203,17 +257,6 @@ function standardDeviation(values: number[], average: number): number {
     values.reduce((total, value) => total + (value - average) ** 2, 0) / values.length;
 
   return Math.sqrt(variance);
-}
-
-function median(values: number[]): number {
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-
-  if (sorted.length % 2 === 0) {
-    return (sorted[middle - 1] + sorted[middle]) / 2;
-  }
-
-  return sorted[middle];
 }
 
 function clamp(value: number, min: number, max: number): number {
