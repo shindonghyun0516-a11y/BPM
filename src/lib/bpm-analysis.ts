@@ -20,6 +20,15 @@ const MIN_ONSET_GAP_MS = 120;
 const ONSET_STDDEV_WEIGHT = 0.55;
 const ONSET_VARIATION_WEIGHT = 0.35;
 const MIN_INTERVAL_STABILITY = 0.18;
+const MIN_REFERENCE_MAX_ENERGY = MIN_SIGNAL_THRESHOLD;
+const MIN_REFERENCE_SIGNAL_VARIATION = MIN_SIGNAL_VARIATION;
+const MIN_REFERENCE_SIGNAL_DETECTED_COUNT = 12;
+const MIN_REFERENCE_ONSET_COUNT = 5;
+const MIN_REFERENCE_CANDIDATE_SUPPORT = 2;
+const MIN_REFERENCE_TOP_SCORE_RATIO = 0.28;
+const MIN_REFERENCE_RELATED_SCORE_RATIO = 0.45;
+const MAX_REFERENCE_CANDIDATE_SPREAD_BPM = 220;
+const REFERENCE_INTERVAL_STEPS = [1, 2, 4] as const;
 
 export function calculateSignalEnergy(frame: Uint8Array<ArrayBufferLike>): number {
   if (frame.length === 0) {
@@ -64,6 +73,11 @@ export function analyzeEnergySamples(samples: EnergySample[]): BpmAnalysisOutcom
     meanEnergy +
     Math.max(energyStdDev * ONSET_STDDEV_WEIGHT, signalVariation * ONSET_VARIATION_WEIGHT);
   const onsetTimes = findOnsetTimes(samples, onsetThreshold);
+  const signalStats = {
+    maxEnergy,
+    signalVariation,
+    signalDetectedCount: energies.filter((energy) => energy >= MIN_SIGNAL_THRESHOLD).length
+  };
 
   if (onsetTimes.length < MIN_ONSET_COUNT) {
     return unstable("박자 후보가 충분하지 않습니다.");
@@ -92,7 +106,10 @@ export function analyzeEnergySamples(samples: EnergySample[]): BpmAnalysisOutcom
   const intervalStability = calculateIntervalStability(intervals, medianInterval);
 
   if (intervalStability < MIN_INTERVAL_STABILITY) {
-    return unstable("박자 간격이 너무 불규칙합니다.");
+    return (
+      buildLowConfidenceReferenceResult(onsetTimes, signalStats) ??
+      unstable("박자 간격이 너무 불규칙합니다.")
+    );
   }
 
   const signalScore = clamp(signalVariation / 0.08, 0, 1);
@@ -105,8 +122,9 @@ export function analyzeEnergySamples(samples: EnergySample[]): BpmAnalysisOutcom
 
   return {
     kind: "result",
+    resultKind: "stable",
     recommendedBpm,
-    candidates: buildBpmCandidates(recommendedBpm),
+    candidates: buildBpmCandidates(recommendedBpm, "추천"),
     confidence: getConfidenceLevel(confidenceScore),
     confidenceScore
   };
@@ -142,9 +160,123 @@ function buildIntervals(onsetTimes: number[]): number[] {
   return intervals;
 }
 
-function buildBpmCandidates(recommendedBpm: number): BpmCandidate[] {
+function buildLowConfidenceReferenceResult(
+  onsetTimes: number[],
+  signalStats: {
+    maxEnergy: number;
+    signalVariation: number;
+    signalDetectedCount: number;
+  }
+): BpmAnalysisOutcome | null {
+  if (
+    signalStats.maxEnergy < MIN_REFERENCE_MAX_ENERGY ||
+    signalStats.signalVariation < MIN_REFERENCE_SIGNAL_VARIATION ||
+    signalStats.signalDetectedCount < MIN_REFERENCE_SIGNAL_DETECTED_COUNT ||
+    onsetTimes.length < MIN_REFERENCE_ONSET_COUNT
+  ) {
+    return null;
+  }
+
+  const candidateScores = scoreReferenceCandidates(onsetTimes);
+
+  if (candidateScores.length === 0) {
+    return null;
+  }
+
+  const [topCandidate, secondCandidate] = candidateScores;
+  const totalScore = candidateScores.reduce((total, candidate) => total + candidate.score, 0);
+  const topScoreRatio = topCandidate.score / totalScore;
+  const candidateBpms = candidateScores
+    .filter((candidate) => candidate.score >= topCandidate.score * MIN_REFERENCE_RELATED_SCORE_RATIO)
+    .map((candidate) => candidate.bpm);
+  const candidateSpread =
+    Math.max(...candidateBpms) - Math.min(...candidateBpms);
+
+  if (
+    topCandidate.support < MIN_REFERENCE_CANDIDATE_SUPPORT ||
+    topScoreRatio < MIN_REFERENCE_TOP_SCORE_RATIO ||
+    candidateSpread > MAX_REFERENCE_CANDIDATE_SPREAD_BPM
+  ) {
+    return null;
+  }
+
+  const confidenceScore = Math.min(
+    CONFIDENCE_LOW_THRESHOLD - 0.01,
+    clamp(
+      topScoreRatio * 0.28 +
+        (secondCandidate ? topCandidate.score / secondCandidate.score : 1) * 0.08,
+      0.08,
+      0.36
+    )
+  );
+
+  return {
+    kind: "result",
+    resultKind: "reference",
+    recommendedBpm: topCandidate.bpm,
+    candidates: buildBpmCandidates(topCandidate.bpm, "참고 후보"),
+    confidence: "낮음",
+    confidenceScore
+  };
+}
+
+function scoreReferenceCandidates(onsetTimes: number[]): Array<{
+  bpm: number;
+  score: number;
+  support: number;
+}> {
+  const bucketScores = new Map<number, { score: number; support: number }>();
+
+  for (const step of REFERENCE_INTERVAL_STEPS) {
+    for (let index = step; index < onsetTimes.length; index += 1) {
+      const intervalMs = onsetTimes[index] - onsetTimes[index - step];
+
+      addReferenceCandidate(bucketScores, 60_000 / intervalMs, step === 1 ? 1 : 0.7);
+
+      if (step > 1) {
+        addReferenceCandidate(bucketScores, (60_000 * step) / intervalMs, 0.85);
+      }
+    }
+  }
+
+  return [...bucketScores.entries()]
+    .map(([bpm, value]) => ({
+      bpm,
+      score: value.score,
+      support: value.support
+    }))
+    .sort((a, b) => b.score - a.score || b.support - a.support)
+    .slice(0, 8);
+}
+
+function addReferenceCandidate(
+  bucketScores: Map<number, { score: number; support: number }>,
+  rawBpm: number,
+  weight: number
+) {
+  if (
+    rawBpm < DEFAULT_BPM_RANGE_MIN ||
+    rawBpm > DEFAULT_BPM_RANGE_MAX ||
+    !Number.isFinite(rawBpm)
+  ) {
+    return;
+  }
+
+  const bucketedBpm = Math.round(rawBpm / 2) * 2;
+  const currentScore = bucketScores.get(bucketedBpm) ?? { score: 0, support: 0 };
+
+  bucketScores.set(bucketedBpm, {
+    score: currentScore.score + weight,
+    support: currentScore.support + 1
+  });
+}
+
+function buildBpmCandidates(
+  recommendedBpm: number,
+  primaryLabel: BpmCandidate["label"]
+): BpmCandidate[] {
   const rawCandidates: BpmCandidate[] = [
-    { bpm: recommendedBpm, label: "추천" },
+    { bpm: recommendedBpm, label: primaryLabel },
     { bpm: Math.round(recommendedBpm / 2), label: "Half-time 참고" },
     { bpm: Math.round(recommendedBpm * 2), label: "Double-time 참고" }
   ];
