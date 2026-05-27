@@ -203,6 +203,20 @@ h3 {
   font-size: 0.92rem;
 }
 
+.signal-status {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 34px;
+  margin: 0;
+  padding: 7px 10px;
+  align-items: center;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: #0f3f3b;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
 .progress-track {
   height: 10px;
   overflow: hidden;
@@ -293,6 +307,75 @@ h3 {
 .notice {
   padding-top: 18px;
   border-top: 1px solid var(--border);
+}
+
+.debug-actions {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.debug-toggle {
+  min-height: 42px;
+  padding-block: 9px;
+  font-size: 0.92rem;
+}
+
+.debug-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.debug-panel h2 {
+  margin-bottom: 0;
+}
+
+.debug-help {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.debug-grid {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.debug-grid div {
+  display: grid;
+  grid-template-columns: minmax(118px, 0.9fr) minmax(0, 1.1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 8px 0;
+  border-top: 1px solid #edf0f4;
+}
+
+.debug-grid dt {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.debug-grid dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    monospace;
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 @media (max-width: 360px) {
