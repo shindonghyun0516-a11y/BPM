@@ -39,3 +39,6 @@ jobs:
 
       - name: Privacy check
         run: node scripts/harness/privacy-check.mjs
+
+      - name: BPM result UI check
+        run: node scripts/harness/bpm-ui-check.mjs

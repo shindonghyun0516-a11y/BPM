@@ -310,19 +310,24 @@ export default function Home() {
         )}
 
         {screen === "result" && result && (
-          <div className="state-block">
+          <div className="state-block" data-testid="bpm-result-section">
             <h2>측정 결과</h2>
-            <p className="result-note">
-              V0 임시 추정값입니다. 음악과 환경에 따라 실제 BPM과 다를 수 있습니다.
+            <p className="result-note" data-testid="bpm-result-disclaimer">
+              V0 임시 추정값입니다. 단일 정답이 아니라 후보 BPM과 신뢰도를 함께 확인해
+              주세요.
             </p>
-            <div className="bpm-result" aria-label={`추천 BPM ${result.recommendedBpm}`}>
+            <div
+              className="bpm-result"
+              data-testid="recommended-bpm"
+              aria-label={`추천 BPM ${result.recommendedBpm}`}
+            >
               <span>추천 BPM</span>
               <strong>{result.recommendedBpm}</strong>
             </div>
             <div className="result-grid">
               <div>
                 <h3>후보 BPM</h3>
-                <ul className="candidate-list">
+                <ul className="candidate-list" data-testid="bpm-candidates">
                   {result.candidates.map((candidate) => (
                     <li key={`${candidate.label}-${candidate.bpm}`}>
                       <strong>{candidate.bpm}</strong>
@@ -333,13 +338,20 @@ export default function Home() {
               </div>
               <div>
                 <h3>신뢰도</h3>
-                <p className="confidence">{result.confidence}</p>
+                <p className="confidence" data-testid="bpm-confidence">
+                  {result.confidence}
+                </p>
                 {result.confidence === "낮음" && (
                   <p className="subtle">신호가 흔들렸습니다. 다시 측정해 보세요.</p>
                 )}
               </div>
             </div>
-            <button className="primary-button" type="button" onClick={showPermissionGuide}>
+            <button
+              className="primary-button"
+              data-testid="remeasure-button"
+              type="button"
+              onClick={showPermissionGuide}
+            >
               다시 측정
             </button>
           </div>
@@ -348,10 +360,19 @@ export default function Home() {
         {screen === "unstable-result" && (
           <div className="state-block">
             <h2>측정이 불안정합니다</h2>
-            <p>측정이 불안정합니다. 다시 측정해 주세요.</p>
+            <p data-testid="unstable-result-message">
+              측정이 불안정합니다. 다시 측정해 주세요.
+            </p>
             {unstableReason && <p className="subtle">원인: {unstableReason}</p>}
-            <p className="subtle">탭 보정 기능은 다음 버전에서 제공 예정입니다.</p>
-            <button className="primary-button" type="button" onClick={showPermissionGuide}>
+            <p className="subtle" data-testid="tap-calibration-coming-soon">
+              탭 보정 기능은 다음 버전에서 제공 예정입니다.
+            </p>
+            <button
+              className="primary-button"
+              data-testid="remeasure-button"
+              type="button"
+              onClick={showPermissionGuide}
+            >
               다시 측정
             </button>
           </div>
@@ -360,7 +381,7 @@ export default function Home() {
         {screen === "permission-denied" && (
           <div className="state-block">
             <h2>마이크 권한이 꺼져 있습니다</h2>
-            <p>{deniedMessage}</p>
+            <p data-testid="permission-denied-message">{deniedMessage}</p>
             <p className="subtle">
               브라우저 설정에서 마이크 권한을 다시 허용하면 자동 측정을 사용할 수
               있습니다.
