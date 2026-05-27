@@ -46,9 +46,9 @@ Issue #3의 필수 차단 조건:
 - 테스트 실패
 - 오디오 파일 업로드, 마이크 입력 서버 전송, 녹음 파일 저장, 명백한 recording upload API 가능성 발견
 
-### Issue #4 이후 활성화할 검사
+### Issue #5 이후 활성화할 검사
 
-BPM result UI check는 Issue #4에서 BPM 결과 화면이 구현된 뒤 필수 차단 조건으로 활성화한다.
+BPM result UI check는 Issue #4에서 결과 화면이 구현된 뒤, 후속 Issue #5에서 필수 차단 조건으로 활성화한다.
 
 BPM result UI check가 확인할 항목:
 
@@ -81,7 +81,7 @@ npm test --if-present
 node scripts/harness/privacy-check.mjs
 ```
 
-주의: `npm run harness:bpm-result-ui`는 Issue #4 이후 BPM 결과 화면이 생긴 뒤 추가한다.
+주의: `npm run harness:bpm-result-ui`는 Issue #5에서 별도 작업으로 추가한다.
 
 추후 기능이 준비되면 다음 검사를 필수로 승격할 수 있다.
 
@@ -229,7 +229,8 @@ V0에서는 위 실패 조건이 바로 merge 차단을 의미하지 않는다. 
 - Issue #2에서는 Next.js 모바일웹 프로젝트 초기화만 진행한다.
 - Issue #3에서 build, lint, test, privacy check를 기본 검사로 추가한다.
 - Issue #3에서는 BPM result UI check를 문서화하지만 필수 실패 조건으로 강제하지 않는다.
-- Issue #4에서 BPM 결과 화면 구현 후 BPM result UI check를 필수 실패 조건으로 활성화한다.
+- Issue #4에서는 BPM 결과 화면을 구현하되 BPM result UI check를 필수 실패 조건으로 추가하지 않는다.
+- Issue #5에서 BPM result UI check를 필수 실패 조건으로 활성화한다.
 - 정확도 테스트는 초기에는 자동 차단 조건이 아니라 PM 수동 검수 항목으로 둔다.
 
 주의: `package.json`과 UI 소스가 없는 상태에서 workflow를 먼저 활성화하면 `npm ci`, build, UI check가 실패한다.

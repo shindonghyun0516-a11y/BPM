@@ -119,7 +119,7 @@ Issue #3에서 PM 확인으로 분리하는 항목:
 - BPM 정확도 검사
 - 모바일 브라우저 실제 사용성 검사
 
-BPM 결과 UI 필수 검사는 Issue #4에서 BPM 결과 화면이 구현된 뒤 추가합니다. BPM 정확도는 V0에서는 PM 수동 검수 항목으로 관리합니다.
+BPM 결과 UI 필수 검사는 Issue #4에서 결과 화면이 구현된 뒤, 후속 Issue #5에서 추가합니다. BPM 정확도는 V0에서는 PM 수동 검수 항목으로 관리합니다.
 
 ## PM이 결정해야 하는 항목
 
@@ -135,7 +135,7 @@ BPM 결과 UI 필수 검사는 Issue #4에서 BPM 결과 화면이 구현된 뒤
 - 기본 작업 방식은 Codex App Worktree입니다.
 - 낮은 위험의 문서 작업은 Local 또는 단순 Branch 작업을 허용합니다.
 - Issue #3 `harness-check.yml` 필수 검사는 build, lint, test, privacy check입니다.
-- BPM result UI check는 Issue #4에서 BPM 결과 화면이 구현된 뒤 필수 검사로 활성화합니다.
+- BPM result UI check는 Issue #4에서 결과 화면이 구현된 뒤, Issue #5에서 필수 검사로 활성화합니다.
 - 초기에는 BPM 정확도 테스트를 자동 차단 조건으로 두지 않고 PM 수동 검수 항목으로 관리합니다.
 - 모바일웹 MVP 초기 배포 플랫폼은 Vercel로 결정합니다.
 - GitHub main 브랜치 병합 후 Vercel production 배포를 목표로 합니다.

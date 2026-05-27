@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "BPM 자동 측정",
-  description: "모바일웹 MVP 준비 중인 BPM 자동 측정 앱"
+  description: "모바일웹 V0 BPM 자동 측정 프로토타입"
 };
 
 export const viewport: Viewport = {
