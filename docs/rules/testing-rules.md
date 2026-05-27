@@ -67,6 +67,65 @@ PM 또는 사람이 직접 확인할 테스트:
 
 샘플은 실제 음악 파일일 수도 있고, 테스트용으로 만든 단순한 비트 사운드일 수도 있다. 단, 초기 MVP에서는 사용자의 오디오를 서버로 보내는 방식으로 테스트하지 않는다.
 
+## 5-1. Critical BPM Pipeline 테스트
+
+정규 비트 기준곡에서도 BPM 결과가 나오지 않으면 장르별 후보 처리나 정확도 QA로 넘어가지 않는다.
+
+Critical Fix에서는 다음 순서로 파이프라인을 분리해서 확인한다.
+
+1. synthetic self-test로 알고리즘 계산부를 확인한다.
+2. 외부 metronome으로 실제 마이크 입력 파이프라인을 확인한다.
+3. 실패 지점을 입력, threshold, onset, candidate, stability, state, UI 중 하나로 분리한다.
+
+### Synthetic self-test 기준
+
+- 60 BPM
+- 90 BPM
+- 120 BPM
+- 128 BPM
+- 140 BPM
+
+90 BPM과 120 BPM은 반드시 후보가 생성되어야 한다. 추천 BPM이 기대값에서 5 BPM 이내이거나 half/double 후보에 포함되면 통과로 본다.
+
+### External metronome QA 기록 양식
+
+```md
+## External Metronome QA
+
+Preview URL:
+테스트 일시:
+기기:
+브라우저:
+외부 스피커/재생 기기:
+
+| 테스트 | 입력 | 볼륨 | 결과 화면 | 추천 BPM | 후보 BPM | 신뢰도 | RMS | Peak | Onset candidates | BPM candidates | Stability score | Reason | PM 판단 |
+|---|---|---|---|---:|---|---|---:|---:|---:|---|---:|---|---|
+| 무음 | 없음 | - | 불안정 기대 |  |  |  |  |  |  |  |  |  | 통과/수정 필요 |
+| Metronome | 90 BPM | 작음 | 후보 기대 |  |  |  |  |  |  |  |  |  | 통과/수정 필요 |
+| Metronome | 90 BPM | 큼 | 후보 기대 |  |  |  |  |  |  |  |  |  | 통과/수정 필요 |
+| Metronome | 120 BPM | 작음 | 후보 기대 |  |  |  |  |  |  |  |  |  | 통과/수정 필요 |
+| Metronome | 120 BPM | 큼 | 후보 기대 |  |  |  |  |  |  |  |  |  | 통과/수정 필요 |
+| Drum loop | 단순 4/4 | 보통 | 후보 기대 |  |  |  |  |  |  |  |  |  | 통과/수정 필요 |
+```
+
+### Go / No-Go 기준
+
+Go 기준:
+
+- synthetic 90/120 BPM self-test가 통과한다.
+- external metronome 120 BPM에서 120 ± 5 또는 half/double 후보가 표시된다.
+- 무음에서는 BPM을 억지로 표시하지 않는다.
+- 실패 reason이 PM이 이해할 수 있게 표시된다.
+
+No-Go 기준:
+
+- synthetic self-test도 실패한다.
+- synthetic은 통과하지만 external metronome에서 후보가 전혀 생성되지 않는다.
+- RMS/Peak는 충분한데 onset candidates가 계속 0이다.
+- onset candidates는 충분한데 BPM candidates가 계속 0이다.
+- BPM candidates가 있는데 UI에 표시되지 않는다.
+- 최소 수정으로도 정규 비트 기준곡 측정이 안 된다.
+
 ## 6. 소음 환경 테스트
 
 실제 사용자는 항상 조용한 환경에서 측정하지 않는다.

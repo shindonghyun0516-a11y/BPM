@@ -1,4 +1,5 @@
 import type {
+  BpmAnalysisDiagnostics,
   BpmAnalysisOutcome,
   BpmCandidate,
   ConfidenceLevel,
@@ -36,9 +37,24 @@ export function calculateSignalEnergy(frame: Uint8Array<ArrayBufferLike>): numbe
   return Math.sqrt(sum / frame.length);
 }
 
+export function calculateSignalPeak(frame: Uint8Array<ArrayBufferLike>): number {
+  if (frame.length === 0) {
+    return 0;
+  }
+
+  let peak = 0;
+
+  for (const value of frame) {
+    const centered = Math.abs((value - 128) / 128);
+    peak = Math.max(peak, centered);
+  }
+
+  return peak;
+}
+
 export function analyzeEnergySamples(samples: EnergySample[]): BpmAnalysisOutcome {
   if (samples.length < MIN_ONSET_COUNT) {
-    return unstable("분석할 신호가 충분하지 않습니다.");
+    return unstable("분석할 신호가 충분하지 않습니다.", buildDiagnostics(samples));
   }
 
   const firstSample = samples[0];
@@ -46,7 +62,7 @@ export function analyzeEnergySamples(samples: EnergySample[]): BpmAnalysisOutcom
   const durationMs = lastSample.timestampMs - firstSample.timestampMs;
 
   if (durationMs < MIN_ANALYSIS_DURATION_MS) {
-    return unstable("측정 시간이 충분하지 않습니다.");
+    return unstable("측정 시간이 충분하지 않습니다.", buildDiagnostics(samples));
   }
 
   const energies = samples.map((sample) => sample.energy);
@@ -57,28 +73,46 @@ export function analyzeEnergySamples(samples: EnergySample[]): BpmAnalysisOutcom
   const energyStdDev = standardDeviation(energies, meanEnergy);
 
   if (maxEnergy < MIN_SIGNAL_THRESHOLD || signalVariation < MIN_SIGNAL_VARIATION) {
-    return unstable("입력 신호가 너무 작거나 변화가 부족합니다.");
+    return unstable("입력 신호가 너무 작거나 변화가 부족합니다.", buildDiagnostics(samples));
   }
 
   const onsetThreshold =
     meanEnergy +
     Math.max(energyStdDev * ONSET_STDDEV_WEIGHT, signalVariation * ONSET_VARIATION_WEIGHT);
   const onsetTimes = findOnsetTimes(samples, onsetThreshold);
+  const intervals = buildIntervals(onsetTimes);
+  const bpmCandidateValues = buildBpmCandidateValues(intervals);
 
   if (onsetTimes.length < MIN_ONSET_COUNT) {
-    return unstable("박자 후보가 충분하지 않습니다.");
+    return unstable(
+      "박자 후보가 충분하지 않습니다.",
+      buildDiagnostics(samples, {
+        onsetThreshold,
+        onsetTimes,
+        intervals,
+        bpmCandidateValues
+      })
+    );
   }
 
-  const intervals = buildIntervals(onsetTimes).filter((intervalMs) => {
+  const validIntervals = intervals.filter((intervalMs) => {
     const bpm = 60_000 / intervalMs;
     return bpm >= DEFAULT_BPM_RANGE_MIN && bpm <= DEFAULT_BPM_RANGE_MAX;
   });
 
-  if (intervals.length < MIN_ONSET_COUNT - 1) {
-    return unstable("BPM 범위 안에서 안정적인 간격을 찾지 못했습니다.");
+  if (validIntervals.length < MIN_ONSET_COUNT - 1) {
+    return unstable(
+      "BPM 범위 안에서 안정적인 간격을 찾지 못했습니다.",
+      buildDiagnostics(samples, {
+        onsetThreshold,
+        onsetTimes,
+        intervals,
+        bpmCandidateValues
+      })
+    );
   }
 
-  const medianInterval = median(intervals);
+  const medianInterval = median(validIntervals);
   const recommendedBpm = Math.round(60_000 / medianInterval);
 
   if (
@@ -86,13 +120,30 @@ export function analyzeEnergySamples(samples: EnergySample[]): BpmAnalysisOutcom
     recommendedBpm > DEFAULT_BPM_RANGE_MAX ||
     !Number.isFinite(recommendedBpm)
   ) {
-    return unstable("BPM 후보가 허용 범위를 벗어났습니다.");
+    return unstable(
+      "BPM 후보가 허용 범위를 벗어났습니다.",
+      buildDiagnostics(samples, {
+        onsetThreshold,
+        onsetTimes,
+        intervals,
+        bpmCandidateValues
+      })
+    );
   }
 
-  const intervalStability = calculateIntervalStability(intervals, medianInterval);
+  const intervalStability = calculateIntervalStability(validIntervals, medianInterval);
 
   if (intervalStability < MIN_INTERVAL_STABILITY) {
-    return unstable("박자 간격이 너무 불규칙합니다.");
+    return unstable(
+      "박자 간격이 너무 불규칙합니다.",
+      buildDiagnostics(samples, {
+        onsetThreshold,
+        onsetTimes,
+        intervals,
+        bpmCandidateValues,
+        intervalStability
+      })
+    );
   }
 
   const signalScore = clamp(signalVariation / 0.08, 0, 1);
@@ -108,7 +159,16 @@ export function analyzeEnergySamples(samples: EnergySample[]): BpmAnalysisOutcom
     recommendedBpm,
     candidates: buildBpmCandidates(recommendedBpm),
     confidence: getConfidenceLevel(confidenceScore),
-    confidenceScore
+    confidenceScore,
+    diagnostics: buildDiagnostics(samples, {
+      onsetThreshold,
+      onsetTimes,
+      intervals,
+      bpmCandidateValues,
+      intervalStability,
+      resultType: "regular-result",
+      reason: "정규 BPM 결과가 생성되었습니다."
+    })
   };
 }
 
@@ -140,6 +200,26 @@ function buildIntervals(onsetTimes: number[]): number[] {
   }
 
   return intervals;
+}
+
+function buildBpmCandidateValues(intervals: number[]): number[] {
+  const seen = new Set<number>();
+
+  return intervals
+    .map((intervalMs) => Math.round(60_000 / intervalMs))
+    .filter((bpm) => {
+      if (
+        bpm < DEFAULT_BPM_RANGE_MIN ||
+        bpm > DEFAULT_BPM_RANGE_MAX ||
+        !Number.isFinite(bpm) ||
+        seen.has(bpm)
+      ) {
+        return false;
+      }
+
+      seen.add(bpm);
+      return true;
+    });
 }
 
 function buildBpmCandidates(recommendedBpm: number): BpmCandidate[] {
@@ -187,10 +267,56 @@ function calculateIntervalStability(intervals: number[], medianInterval: number)
   return clamp(1 - variationRatio / 0.35, 0, 1);
 }
 
-function unstable(reason: string): BpmAnalysisOutcome {
+function unstable(reason: string, diagnostics: BpmAnalysisDiagnostics): BpmAnalysisOutcome {
   return {
     kind: "unstable-result",
-    reason
+    reason,
+    diagnostics: {
+      ...diagnostics,
+      resultType: "unstable-result",
+      reason
+    }
+  };
+}
+
+function buildDiagnostics(
+  samples: EnergySample[],
+  options: {
+    onsetThreshold?: number;
+    onsetTimes?: number[];
+    intervals?: number[];
+    bpmCandidateValues?: number[];
+    intervalStability?: number | null;
+    resultType?: BpmAnalysisDiagnostics["resultType"];
+    reason?: string;
+  } = {}
+): BpmAnalysisDiagnostics {
+  const energies = samples.map((sample) => sample.energy);
+  const firstSample = samples[0];
+  const lastSample = samples[samples.length - 1];
+  const minEnergy = energies.length > 0 ? Math.min(...energies) : 0;
+  const maxEnergy = energies.length > 0 ? Math.max(...energies) : 0;
+  const meanEnergy = energies.length > 0 ? mean(energies) : 0;
+  const signalVariation = maxEnergy - minEnergy;
+
+  return {
+    sampleCount: samples.length,
+    durationMs: firstSample && lastSample ? lastSample.timestampMs - firstSample.timestampMs : 0,
+    signalThreshold: MIN_SIGNAL_THRESHOLD,
+    minEnergy,
+    maxEnergy,
+    meanEnergy,
+    signalVariation,
+    signalDetectedCount: energies.filter((energy) => energy >= MIN_SIGNAL_THRESHOLD).length,
+    onsetThreshold: options.onsetThreshold ?? 0,
+    onsetCandidateCount: options.onsetTimes?.length ?? 0,
+    onsetIntervalsMs: options.intervals ?? [],
+    bpmCandidateCount: options.bpmCandidateValues?.length ?? 0,
+    bpmCandidateValues: options.bpmCandidateValues ?? [],
+    intervalStability: options.intervalStability ?? null,
+    stabilityThreshold: MIN_INTERVAL_STABILITY,
+    resultType: options.resultType ?? "none",
+    reason: options.reason ?? "결과가 아직 생성되지 않았습니다."
   };
 }
 
