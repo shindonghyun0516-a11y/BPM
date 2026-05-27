@@ -237,9 +237,21 @@ h3 {
 }
 
 .result-note,
-.subtle {
+.subtle,
+.signal-status {
   color: var(--muted);
   font-size: 0.94rem;
+}
+
+.signal-status {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 34px;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #eef2f7;
+  font-weight: 700;
 }
 
 .result-grid {

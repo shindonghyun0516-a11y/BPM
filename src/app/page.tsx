@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ENERGY_SAMPLE_INTERVAL_MS,
   MEASUREMENT_DURATION_MS,
+  MIN_SIGNAL_THRESHOLD,
   analyzeEnergySamples,
   calculateSignalEnergy
 } from "@/lib/bpm-analysis";
@@ -16,6 +17,10 @@ type AudioContextWindow = Window & {
 const INITIAL_REMAINING_SECONDS = Math.ceil(MEASUREMENT_DURATION_MS / 1000);
 const deniedMessage =
   "마이크 권한이 꺼져 있어 자동 BPM 측정을 진행할 수 없습니다. 탭 보정 기능은 다음 버전에서 제공 예정입니다. 지금은 마이크 권한을 허용한 뒤 다시 측정해 주세요.";
+const SIGNAL_STATUS_UPDATE_INTERVAL_MS = 350;
+const SIGNAL_DETECTED_SAMPLE_COUNT = 3;
+
+type InputSignalStatus = "checking" | "quiet" | "detected";
 
 export default function Home() {
   const [screen, setScreen] = useState<MeasurementStatus>("idle");
@@ -23,6 +28,8 @@ export default function Home() {
   const [result, setResult] = useState<BpmAnalysisSuccess | null>(null);
   const [unstableReason, setUnstableReason] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [inputSignalStatus, setInputSignalStatus] =
+    useState<InputSignalStatus>("checking");
 
   const statusRef = useRef<MeasurementStatus>("idle");
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -36,6 +43,7 @@ export default function Home() {
   const countdownTimerRef = useRef<number | null>(null);
   const finishTimerRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const lastSignalStatusUpdateRef = useRef(0);
 
   useEffect(() => {
     statusRef.current = screen;
@@ -82,12 +90,14 @@ export default function Home() {
 
     energySamplesRef.current = [];
     measurementStartedAtRef.current = 0;
+    lastSignalStatusUpdateRef.current = 0;
   }, []);
 
   const resetOutput = useCallback(() => {
     setResult(null);
     setUnstableReason("");
     setErrorMessage("");
+    setInputSignalStatus("checking");
     setRemainingSeconds(INITIAL_REMAINING_SECONDS);
   }, []);
 
@@ -124,10 +134,29 @@ export default function Home() {
     }
 
     analyser.getByteTimeDomainData(frameData);
-    energySamplesRef.current.push({
+    const nextSample = {
       timestampMs: performance.now() - measurementStartedAtRef.current,
       energy: calculateSignalEnergy(frameData)
-    });
+    };
+
+    energySamplesRef.current.push(nextSample);
+
+    const now = performance.now();
+
+    if (now - lastSignalStatusUpdateRef.current < SIGNAL_STATUS_UPDATE_INTERVAL_MS) {
+      return;
+    }
+
+    lastSignalStatusUpdateRef.current = now;
+
+    const recentSamples = energySamplesRef.current.slice(-12);
+    const detectedCount = recentSamples.filter(
+      (sample) => sample.energy >= MIN_SIGNAL_THRESHOLD
+    ).length;
+
+    setInputSignalStatus(
+      detectedCount >= SIGNAL_DETECTED_SAMPLE_COUNT ? "detected" : "quiet"
+    );
   }, []);
 
   const startMeasurement = useCallback(async () => {
@@ -160,7 +189,12 @@ export default function Home() {
       const analyser = audioContext.createAnalyser();
       const source = audioContext.createMediaStreamSource(stream);
 
-      analyser.fftSize = 1024;
+      if (audioContext.state === "suspended") {
+        await audioContext.resume();
+      }
+
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0.2;
       source.connect(analyser);
 
       mediaStreamRef.current = stream;
@@ -170,8 +204,10 @@ export default function Home() {
       frameDataRef.current = new Uint8Array(analyser.fftSize);
       measurementStartedAtRef.current = performance.now();
       energySamplesRef.current = [];
+      lastSignalStatusUpdateRef.current = 0;
 
       setRemainingSeconds(INITIAL_REMAINING_SECONDS);
+      setInputSignalStatus("checking");
       setScreen("measuring");
 
       collectEnergySample();
@@ -241,7 +277,7 @@ export default function Home() {
         <p className="eyebrow">Mobile Web V0</p>
         <h1 id="page-title">BPM 자동 측정</h1>
         <p className="summary">
-          마이크 입력을 브라우저 안에서만 분석해 약 10초 동안 BPM 후보를 추정합니다.
+          마이크 입력을 브라우저 안에서만 분석해 약 20초 동안 BPM 후보를 추정합니다.
           오디오는 저장하거나 서버로 전송하지 않습니다.
         </p>
       </section>
@@ -284,6 +320,9 @@ export default function Home() {
           <div className="state-block">
             <h2>측정 중</h2>
             <p>음악이 잘 들리도록 기기를 소리 가까이에 두세요.</p>
+            <p className="signal-status" aria-live="polite">
+              입력 신호: {getInputSignalLabel(inputSignalStatus)}
+            </p>
             <div className="timer" aria-label={`남은 시간 ${remainingSeconds}초`}>
               <strong>{remainingSeconds}</strong>
               <span>초 남음</span>
@@ -412,6 +451,16 @@ export default function Home() {
       </section>
     </main>
   );
+}
+
+function getInputSignalLabel(status: InputSignalStatus): string {
+  const labels: Record<InputSignalStatus, string> = {
+    checking: "확인 중",
+    quiet: "약함",
+    detected: "감지됨"
+  };
+
+  return labels[status];
 }
 
 function StatusBadge({ screen }: { screen: MeasurementStatus }) {
