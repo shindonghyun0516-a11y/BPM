@@ -46,17 +46,23 @@ Issue #3의 필수 차단 조건:
 - 테스트 실패
 - 오디오 파일 업로드, 마이크 입력 서버 전송, 녹음 파일 저장, 명백한 recording upload API 가능성 발견
 
-### Issue #5 이후 활성화할 검사
+### Issue #5에서 활성화하는 검사
 
-BPM result UI check는 Issue #4에서 결과 화면이 구현된 뒤, 후속 Issue #5에서 필수 차단 조건으로 활성화한다.
+BPM result UI check는 Issue #4에서 결과 화면이 구현된 뒤, Issue #5에서 필수 차단 조건으로 활성화한다.
 
 BPM result UI check가 확인할 항목:
 
 - 추천 BPM 표시
 - 후보 BPM 표시
 - 신뢰도 표시
+- 신뢰도 라벨 `낮음 / 보통 / 높음`
 - 다시 측정 버튼 표시
 - 불안정 결과에서 다시 측정 또는 탭 보정 안내
+- 권한 거부 화면에서 탭 보정 기능이 다음 버전 제공 예정이라는 안내
+- 결과가 V0 임시 추정값이며 단일 정답이 아니라는 안내
+- 실제 탭 측정 기능처럼 보이는 금지 문구 부재
+
+주의: BPM result UI check는 UI 필수 요소 검사다. BPM 숫자가 실제 음악과 얼마나 정확히 맞는지는 검사하지 않는다.
 
 필수 차단 조건:
 
@@ -79,9 +85,10 @@ npm run build
 npm run lint
 npm test --if-present
 node scripts/harness/privacy-check.mjs
+node scripts/harness/bpm-ui-check.mjs
 ```
 
-주의: `npm run harness:bpm-result-ui`는 Issue #5에서 별도 작업으로 추가한다.
+주의: `node scripts/harness/bpm-ui-check.mjs`는 Issue #5부터 GitHub Actions `harness-check`에서 실행한다.
 
 추후 기능이 준비되면 다음 검사를 필수로 승격할 수 있다.
 
