@@ -7,7 +7,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
-    "test": "node -e \"console.log('No tests yet for Issue #2')\""
+    "test": "node scripts/test/run-tests.mjs"
   },
   "dependencies": {
     "next": "^16.2.6",
