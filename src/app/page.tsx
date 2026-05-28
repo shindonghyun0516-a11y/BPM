@@ -313,15 +313,18 @@ export default function Home() {
           <div className="state-block" data-testid="bpm-result-section">
             <h2>측정 결과</h2>
             <p className="result-note" data-testid="bpm-result-disclaimer">
-              V0 임시 추정값입니다. 단일 정답이 아니라 후보 BPM과 신뢰도를 함께 확인해
-              주세요.
+              {result.resultKind === "reference"
+                ? "스윙감, 강세, 연주 스타일 때문에 결과가 달라질 수 있습니다. 정확한 BPM으로 확정하지 말고 참고 후보로 확인해 주세요."
+                : "V0 임시 추정값입니다. 단일 정답이 아니라 후보 BPM과 신뢰도를 함께 확인해 주세요."}
             </p>
             <div
               className="bpm-result"
               data-testid="recommended-bpm"
-              aria-label={`추천 BPM ${result.recommendedBpm}`}
+              aria-label={`${
+                result.resultKind === "reference" ? "참고 BPM 후보" : "추천 BPM"
+              } ${result.recommendedBpm}`}
             >
-              <span>추천 BPM</span>
+              <span>{result.resultKind === "reference" ? "참고 BPM 후보" : "추천 BPM"}</span>
               <strong>{result.recommendedBpm}</strong>
             </div>
             <div className="result-grid">
@@ -341,8 +344,14 @@ export default function Home() {
                 <p className="confidence" data-testid="bpm-confidence">
                   {result.confidence}
                 </p>
-                {result.confidence === "낮음" && (
-                  <p className="subtle">신호가 흔들렸습니다. 다시 측정해 보세요.</p>
+                {result.resultKind === "reference" ? (
+                  <p className="subtle">
+                    정답이 아니라 스윙 계열 음원을 위한 참고 후보입니다.
+                  </p>
+                ) : (
+                  result.confidence === "낮음" && (
+                    <p className="subtle">신호가 흔들렸습니다. 다시 측정해 보세요.</p>
+                  )
                 )}
               </div>
             </div>

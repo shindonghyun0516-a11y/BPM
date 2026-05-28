@@ -18,11 +18,12 @@ export type EnergySample = {
 
 export type BpmCandidate = {
   bpm: number;
-  label: "추천" | "Half-time 참고" | "Double-time 참고";
+  label: "추천" | "참고 후보" | "Half-time 참고" | "Double-time 참고";
 };
 
 export type BpmAnalysisSuccess = {
   kind: "result";
+  resultKind: "regular" | "reference";
   recommendedBpm: number;
   candidates: BpmCandidate[];
   confidence: ConfidenceLevel;
