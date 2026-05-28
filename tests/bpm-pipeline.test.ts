@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { analyzeEnergySamples } from "../src/lib/bpm-analysis";
 import type { BpmAnalysisSuccess, EnergySample } from "../src/types/app";
 
-const EXPECTED_BPMS = [60, 90, 120, 128, 140] as const;
+const EXPECTED_BPMS = [60, 90, 118, 120, 128, 140] as const;
 const BPM_TOLERANCE = 5;
 
 test("synthetic self-test creates BPM candidates for regular beat inputs", () => {
@@ -29,7 +29,7 @@ test("synthetic self-test creates BPM candidates for regular beat inputs", () =>
 });
 
 test("synthetic 90 and 120 BPM are close to the recommended BPM", () => {
-  for (const bpm of [90, 120] as const) {
+  for (const bpm of [90, 118, 120] as const) {
     const result = analyzeEnergySamples(createSyntheticBeatSamples(bpm));
 
     assert.equal(result.kind, "result");
@@ -55,6 +55,26 @@ test("silence does not produce a forced BPM result", () => {
   assert.equal(result.diagnostics.bpmCandidateCount, 0);
 });
 
+test("sparse ambiguous 118 BPM interval case is not over-confirmed as 91 BPM", () => {
+  const result = analyzeEnergySamples(
+    createEnergySamplesFromIntervals([658, 507, 1874, 660, 1523], {
+      durationMs: 10_000
+    })
+  );
+
+  assert.equal(result.kind, "result");
+
+  const success = result as BpmAnalysisSuccess;
+  assert.notEqual(success.resultKind, "regular");
+  assert.notEqual(success.diagnostics.resultType, "regular-result");
+  assert.equal(success.resultKind, "reference");
+  assert.equal(success.confidence, "낮음");
+  assert.ok(
+    success.candidates.some((candidate) => Math.abs(candidate.bpm - 118) <= BPM_TOLERANCE),
+    "118 BPM should remain visible as a reference candidate"
+  );
+});
+
 function hasExpectedBpmCandidate(result: BpmAnalysisSuccess, expectedBpm: number): boolean {
   return result.candidates.some((candidate) => Math.abs(candidate.bpm - expectedBpm) <= BPM_TOLERANCE);
 }
@@ -69,6 +89,21 @@ function createSyntheticBeatSamples(bpm: number): EnergySample[] {
   }
 
   return createEnergySamples(onsetTimes, { durationMs });
+}
+
+function createEnergySamplesFromIntervals(
+  intervalsMs: number[],
+  options: {
+    durationMs: number;
+  }
+): EnergySample[] {
+  const onsetTimes = [500];
+
+  for (const intervalMs of intervalsMs) {
+    onsetTimes.push(onsetTimes[onsetTimes.length - 1] + intervalMs);
+  }
+
+  return createEnergySamples(onsetTimes, options);
 }
 
 function createSilentSamples(): EnergySample[] {
