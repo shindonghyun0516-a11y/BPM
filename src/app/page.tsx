@@ -4,10 +4,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ENERGY_SAMPLE_INTERVAL_MS,
   MEASUREMENT_DURATION_MS,
+  MIN_SIGNAL_THRESHOLD,
   analyzeEnergySamples,
-  calculateSignalEnergy
+  calculateSignalEnergy,
+  calculateSignalPeak
 } from "@/lib/bpm-analysis";
-import type { BpmAnalysisSuccess, EnergySample, MeasurementStatus } from "@/types/app";
+import type {
+  BpmAnalysisSuccess,
+  EnergySample,
+  MeasurementDebugInfo,
+  MeasurementStatus
+} from "@/types/app";
 
 type AudioContextWindow = Window & {
   webkitAudioContext?: typeof AudioContext;
@@ -23,8 +30,11 @@ export default function Home() {
   const [result, setResult] = useState<BpmAnalysisSuccess | null>(null);
   const [unstableReason, setUnstableReason] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [debugVisible, setDebugVisible] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<MeasurementDebugInfo>(createInitialDebugInfo);
 
   const statusRef = useRef<MeasurementStatus>("idle");
+  const debugInfoRef = useRef<MeasurementDebugInfo>(createInitialDebugInfo());
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
@@ -40,6 +50,20 @@ export default function Home() {
   useEffect(() => {
     statusRef.current = screen;
   }, [screen]);
+
+  useEffect(() => {
+    setDebugVisible(new URLSearchParams(window.location.search).get("debug") === "1");
+  }, []);
+
+  const updateDebugInfo = useCallback((nextInfo: Partial<MeasurementDebugInfo>) => {
+    const mergedInfo = {
+      ...debugInfoRef.current,
+      ...nextInfo
+    };
+
+    debugInfoRef.current = mergedInfo;
+    setDebugInfo(mergedInfo);
+  }, []);
 
   const cleanupMeasurement = useCallback(() => {
     if (sampleTimerRef.current !== null) {
@@ -100,6 +124,20 @@ export default function Home() {
   const finishMeasurement = useCallback(() => {
     const samples = [...energySamplesRef.current];
     const outcome = analyzeEnergySamples(samples);
+    const diagnostics = outcome.diagnostics;
+
+    updateDebugInfo({
+      analyserFrameCount: Math.max(debugInfoRef.current.analyserFrameCount, diagnostics.sampleCount),
+      signalDetectedCount: diagnostics.signalDetectedCount,
+      onsetCandidateCount: diagnostics.onsetCandidateCount,
+      onsetIntervalsMs: diagnostics.onsetIntervalsMs,
+      bpmCandidateCount: diagnostics.bpmCandidateCount,
+      bpmCandidateValues: diagnostics.bpmCandidateValues,
+      intervalStability: diagnostics.intervalStability,
+      stabilityThreshold: diagnostics.stabilityThreshold,
+      resultType: diagnostics.resultType,
+      reason: diagnostics.reason
+    });
 
     cleanupMeasurement();
 
@@ -113,7 +151,7 @@ export default function Home() {
     setResult(null);
     setUnstableReason(outcome.reason);
     setScreen("unstable-result");
-  }, [cleanupMeasurement]);
+  }, [cleanupMeasurement, updateDebugInfo]);
 
   const collectEnergySample = useCallback(() => {
     const analyser = analyserNodeRef.current;
@@ -124,15 +162,32 @@ export default function Home() {
     }
 
     analyser.getByteTimeDomainData(frameData);
+    const rms = calculateSignalEnergy(frameData);
+    const peak = calculateSignalPeak(frameData);
+    const previousDebugInfo = debugInfoRef.current;
+
     energySamplesRef.current.push({
       timestampMs: performance.now() - measurementStartedAtRef.current,
-      energy: calculateSignalEnergy(frameData)
+      energy: rms
     });
-  }, []);
+    updateDebugInfo({
+      ...getCurrentTrackDebugInfo(mediaStreamRef.current),
+      audioContextState: audioContextRef.current?.state ?? "unknown",
+      analyserFrameCount: previousDebugInfo.analyserFrameCount + 1,
+      rms,
+      peak: Math.max(previousDebugInfo.peak, peak),
+      signalDetectedCount:
+        previousDebugInfo.signalDetectedCount + (rms >= MIN_SIGNAL_THRESHOLD ? 1 : 0)
+    });
+  }, [updateDebugInfo]);
 
   const startMeasurement = useCallback(async () => {
     cleanupMeasurement();
     resetOutput();
+    const initialDebugInfo = createInitialDebugInfo();
+
+    debugInfoRef.current = initialDebugInfo;
+    setDebugInfo(initialDebugInfo);
 
     if (!navigator.mediaDevices?.getUserMedia) {
       setErrorMessage("이 브라우저에서는 마이크 측정을 사용할 수 없습니다.");
@@ -157,6 +212,15 @@ export default function Home() {
       }
 
       const audioContext = new AudioContextConstructor();
+      let audioContextResumeAttempted = false;
+      let audioContextResumeSucceeded = audioContext.state === "running";
+
+      if (audioContext.state === "suspended") {
+        audioContextResumeAttempted = true;
+        await audioContext.resume();
+        audioContextResumeSucceeded = getAudioContextState(audioContext) === "running";
+      }
+
       const analyser = audioContext.createAnalyser();
       const source = audioContext.createMediaStreamSource(stream);
 
@@ -170,6 +234,13 @@ export default function Home() {
       frameDataRef.current = new Uint8Array(analyser.fftSize);
       measurementStartedAtRef.current = performance.now();
       energySamplesRef.current = [];
+      updateDebugInfo({
+        ...getCurrentTrackDebugInfo(stream),
+        audioContextState: audioContext.state,
+        audioContextResumeAttempted,
+        audioContextResumeSucceeded,
+        sampleRate: audioContext.sampleRate
+      });
 
       setRemainingSeconds(INITIAL_REMAINING_SECONDS);
       setScreen("measuring");
@@ -205,7 +276,7 @@ export default function Home() {
       );
       setScreen("error");
     }
-  }, [cleanupMeasurement, collectEnergySample, finishMeasurement, resetOutput]);
+  }, [cleanupMeasurement, collectEnergySample, finishMeasurement, resetOutput, updateDebugInfo]);
 
   const cancelMeasurement = useCallback(() => {
     cleanupMeasurement();
@@ -313,15 +384,18 @@ export default function Home() {
           <div className="state-block" data-testid="bpm-result-section">
             <h2>측정 결과</h2>
             <p className="result-note" data-testid="bpm-result-disclaimer">
-              V0 임시 추정값입니다. 단일 정답이 아니라 후보 BPM과 신뢰도를 함께 확인해
-              주세요.
+              {result.resultKind === "reference"
+                ? "V0 참고 후보입니다. 정확한 BPM으로 확정하지 말고 참고 후보로만 확인해 주세요."
+                : "V0 임시 추정값입니다. 단일 정답이 아니라 후보 BPM과 신뢰도를 함께 확인해 주세요."}
             </p>
             <div
               className="bpm-result"
               data-testid="recommended-bpm"
-              aria-label={`추천 BPM ${result.recommendedBpm}`}
+              aria-label={`${
+                result.resultKind === "reference" ? "참고 BPM 후보" : "추천 BPM"
+              } ${result.recommendedBpm}`}
             >
-              <span>추천 BPM</span>
+              <span>{result.resultKind === "reference" ? "참고 BPM 후보" : "추천 BPM"}</span>
               <strong>{result.recommendedBpm}</strong>
             </div>
             <div className="result-grid">
@@ -341,8 +415,15 @@ export default function Home() {
                 <p className="confidence" data-testid="bpm-confidence">
                   {result.confidence}
                 </p>
-                {result.confidence === "낮음" && (
-                  <p className="subtle">신호가 흔들렸습니다. 다시 측정해 보세요.</p>
+                {result.resultKind === "reference" ? (
+                  <p className="subtle">
+                    후보는 있지만 박자 근거가 부족합니다. 정답이 아니라 참고 후보로
+                    확인해 주세요.
+                  </p>
+                ) : (
+                  result.confidence === "낮음" && (
+                    <p className="subtle">신호가 흔들렸습니다. 다시 측정해 보세요.</p>
+                  )
                 )}
               </div>
             </div>
@@ -410,8 +491,126 @@ export default function Home() {
           참고 후보로 확인해 주세요.
         </p>
       </section>
+
+      {debugVisible && <DebugPanel debugInfo={debugInfo} />}
     </main>
   );
+}
+
+function createInitialDebugInfo(): MeasurementDebugInfo {
+  return {
+    audioContextState: "not-created",
+    audioContextResumeAttempted: false,
+    audioContextResumeSucceeded: false,
+    mediaTrackState: "none",
+    mediaTrackEnabled: null,
+    mediaTrackMuted: null,
+    sampleRate: null,
+    analyserFrameCount: 0,
+    rms: 0,
+    peak: 0,
+    signalThreshold: MIN_SIGNAL_THRESHOLD,
+    signalDetectedCount: 0,
+    onsetCandidateCount: 0,
+    onsetIntervalsMs: [],
+    bpmCandidateCount: 0,
+    bpmCandidateValues: [],
+    intervalStability: null,
+    stabilityThreshold: 0,
+    resultType: "none",
+    reason: "측정 전입니다."
+  };
+}
+
+function getAudioContextState(audioContext: AudioContext): AudioContextState {
+  return audioContext.state;
+}
+
+function getCurrentTrackDebugInfo(stream: MediaStream | null): Pick<
+  MeasurementDebugInfo,
+  "mediaTrackState" | "mediaTrackEnabled" | "mediaTrackMuted"
+> {
+  const track = stream?.getAudioTracks()[0];
+
+  if (!track) {
+    return {
+      mediaTrackState: "none",
+      mediaTrackEnabled: null,
+      mediaTrackMuted: null
+    };
+  }
+
+  return {
+    mediaTrackState: track.readyState,
+    mediaTrackEnabled: track.enabled,
+    mediaTrackMuted: track.muted
+  };
+}
+
+function DebugPanel({ debugInfo }: { debugInfo: MeasurementDebugInfo }) {
+  const rows = [
+    ["AudioContext state", debugInfo.audioContextState],
+    ["AudioContext resume attempted", formatBoolean(debugInfo.audioContextResumeAttempted)],
+    ["AudioContext resume succeeded", formatBoolean(debugInfo.audioContextResumeSucceeded)],
+    ["Mic track", debugInfo.mediaTrackState],
+    ["Track enabled", formatNullableBoolean(debugInfo.mediaTrackEnabled)],
+    ["Track muted", formatNullableBoolean(debugInfo.mediaTrackMuted)],
+    ["Sample rate", debugInfo.sampleRate === null ? "-" : `${debugInfo.sampleRate} Hz`],
+    ["Analyser frame count", debugInfo.analyserFrameCount.toString()],
+    ["RMS", formatLevel(debugInfo.rms)],
+    ["Peak", formatLevel(debugInfo.peak)],
+    ["Signal threshold", formatLevel(debugInfo.signalThreshold)],
+    ["Signal detected count", debugInfo.signalDetectedCount.toString()],
+    ["Onset candidates", debugInfo.onsetCandidateCount.toString()],
+    ["Onset intervals", formatNumberList(debugInfo.onsetIntervalsMs)],
+    ["BPM candidates", formatNumberList(debugInfo.bpmCandidateValues)],
+    [
+      "Stability score",
+      debugInfo.intervalStability === null ? "-" : debugInfo.intervalStability.toFixed(3)
+    ],
+    ["Stability threshold", debugInfo.stabilityThreshold.toFixed(3)],
+    ["Result type", debugInfo.resultType],
+    ["Reason", debugInfo.reason]
+  ];
+
+  return (
+    <aside className="debug-panel" aria-label="측정 진단 정보">
+      <h2>진단 정보</h2>
+      <p>?debug=1에서만 표시됩니다. 오디오 원본은 저장하지 않고 숫자형 진단값만 보여줍니다.</p>
+      <dl>
+        {rows.map(([label, value]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </aside>
+  );
+}
+
+function formatBoolean(value: boolean): string {
+  return value ? "yes" : "no";
+}
+
+function formatNullableBoolean(value: boolean | null): string {
+  if (value === null) {
+    return "-";
+  }
+
+  return formatBoolean(value);
+}
+
+function formatLevel(value: number): string {
+  return value.toFixed(4);
+}
+
+function formatNumberList(values: number[]): string {
+  if (values.length === 0) {
+    return "-";
+  }
+
+  return values.slice(0, 8).join(", ");
 }
 
 function StatusBadge({ screen }: { screen: MeasurementStatus }) {
