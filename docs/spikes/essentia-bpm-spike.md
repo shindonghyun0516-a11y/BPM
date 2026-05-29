@@ -27,6 +27,8 @@
 | unpacked size | 약 10.1 MB |
 | WASM | `essentia-wasm.*` 파일을 포함한 WebAssembly 기반 |
 
+브라우저 실행에서는 `essentia-wasm.web.js`를 client-only dynamic import로 불러오고, WASM binary는 `public/essentia-wasm.web.wasm` 정적 파일로 제공한다.
+
 ## 라이선스 리스크
 
 Essentia.js는 `AGPL-3.0` 라이선스다.

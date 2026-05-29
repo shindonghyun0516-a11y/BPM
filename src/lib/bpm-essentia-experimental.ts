@@ -90,17 +90,22 @@ export async function analyzeWithEssentiaExperimental(
     };
   }
 
-  let essentia: InstanceType<EssentiaCoreModule["Essentia"]> | null = null;
+  let essentia: InstanceType<EssentiaCoreModule["default"]> | null = null;
   let vector: unknown = null;
   const wasmLoadStartedAt = performance.now();
 
   try {
-    const [{ Essentia }, wasmModule] = (await Promise.all([
+    const [{ default: Essentia }, wasmModule] = (await Promise.all([
       import("essentia.js/dist/essentia.js-core.es.js"),
       import("essentia.js/dist/essentia-wasm.web.js")
     ])) as [EssentiaCoreModule, EssentiaWasmModule];
+    const wasmFactory = wasmModule.default ?? wasmModule.EssentiaWASM;
+    const EssentiaWASM = await wasmFactory({
+      locateFile(path) {
+        return path.endsWith(".wasm") ? "/essentia-wasm.web.wasm" : path;
+      }
+    });
     const wasmLoadTimeMs = elapsed(wasmLoadStartedAt);
-    const EssentiaWASM = await wasmModule.default;
     const preparedPcm =
       input.sampleRate === ESSENTIA_TARGET_SAMPLE_RATE
         ? input.pcm

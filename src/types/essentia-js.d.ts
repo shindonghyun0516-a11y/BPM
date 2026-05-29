@@ -1,5 +1,5 @@
 declare module "essentia.js/dist/essentia.js-core.es.js" {
-  export class Essentia {
+  export default class Essentia {
     constructor(EssentiaWASM: unknown, isDebug?: boolean);
     version: string;
     arrayToVector(inputArray: Float32Array): unknown;
@@ -22,6 +22,11 @@ declare module "essentia.js/dist/essentia.js-core.es.js" {
 }
 
 declare module "essentia.js/dist/essentia-wasm.web.js" {
-  const EssentiaWASM: Promise<unknown>;
+  type EssentiaWasmFactory = (moduleOverrides?: {
+    locateFile?: (path: string, scriptDirectory: string) => string;
+  }) => Promise<unknown>;
+
+  const EssentiaWASM: EssentiaWasmFactory;
+  export { EssentiaWASM };
   export default EssentiaWASM;
 }
