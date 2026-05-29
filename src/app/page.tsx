@@ -7,7 +7,12 @@ import {
   analyzeEnergySamples,
   calculateSignalEnergy
 } from "@/lib/bpm-analysis";
+import {
+  analyzeWithEssentiaExperimental,
+  mergePcmChunks
+} from "@/lib/bpm-essentia-experimental";
 import type { BpmAnalysisSuccess, EnergySample, MeasurementStatus } from "@/types/app";
+import type { EssentiaExperimentalReport } from "@/lib/bpm-essentia-experimental";
 
 type AudioContextWindow = Window & {
   webkitAudioContext?: typeof AudioContext;
@@ -23,14 +28,26 @@ export default function Home() {
   const [result, setResult] = useState<BpmAnalysisSuccess | null>(null);
   const [unstableReason, setUnstableReason] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [isDebugMode, setIsDebugMode] = useState(false);
+  const [essentiaReport, setEssentiaReport] = useState<EssentiaExperimentalReport | null>(
+    null
+  );
+  const [essentiaStatus, setEssentiaStatus] = useState<
+    "idle" | "collecting" | "loading" | "complete" | "failed"
+  >("idle");
 
   const statusRef = useRef<MeasurementStatus>("idle");
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const analyserNodeRef = useRef<AnalyserNode | null>(null);
+  const scriptProcessorNodeRef = useRef<ScriptProcessorNode | null>(null);
+  const silentGainNodeRef = useRef<GainNode | null>(null);
   const frameDataRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
   const energySamplesRef = useRef<EnergySample[]>([]);
+  const pcmChunksRef = useRef<Float32Array[]>([]);
+  const pcmSampleCountRef = useRef(0);
+  const inputSampleRateRef = useRef(0);
   const measurementStartedAtRef = useRef(0);
   const sampleTimerRef = useRef<number | null>(null);
   const countdownTimerRef = useRef<number | null>(null);
@@ -40,6 +57,10 @@ export default function Home() {
   useEffect(() => {
     statusRef.current = screen;
   }, [screen]);
+
+  useEffect(() => {
+    setIsDebugMode(new URLSearchParams(window.location.search).get("debug") === "1");
+  }, []);
 
   const cleanupMeasurement = useCallback(() => {
     if (sampleTimerRef.current !== null) {
@@ -62,8 +83,15 @@ export default function Home() {
       animationFrameRef.current = null;
     }
 
+    scriptProcessorNodeRef.current?.disconnect();
+    silentGainNodeRef.current?.disconnect();
+    if (scriptProcessorNodeRef.current) {
+      scriptProcessorNodeRef.current.onaudioprocess = null;
+    }
     sourceNodeRef.current?.disconnect();
     analyserNodeRef.current?.disconnect();
+    scriptProcessorNodeRef.current = null;
+    silentGainNodeRef.current = null;
     sourceNodeRef.current = null;
     analyserNodeRef.current = null;
     frameDataRef.current = null;
@@ -81,6 +109,9 @@ export default function Home() {
     }
 
     energySamplesRef.current = [];
+    pcmChunksRef.current = [];
+    pcmSampleCountRef.current = 0;
+    inputSampleRateRef.current = 0;
     measurementStartedAtRef.current = 0;
   }, []);
 
@@ -88,8 +119,61 @@ export default function Home() {
     setResult(null);
     setUnstableReason("");
     setErrorMessage("");
+    setEssentiaReport(null);
+    setEssentiaStatus("idle");
     setRemainingSeconds(INITIAL_REMAINING_SECONDS);
   }, []);
+
+  const runEssentiaComparison = useCallback(
+    (outcome: ReturnType<typeof analyzeEnergySamples>, pcm: Float32Array, sampleRate: number) => {
+      if (!isDebugMode) {
+        return;
+      }
+
+      setEssentiaStatus("loading");
+
+      void analyzeWithEssentiaExperimental({
+        pcm,
+        sampleRate,
+        v0Outcome: outcome
+      })
+        .then((report) => {
+          setEssentiaReport(report);
+          setEssentiaStatus(report.status === "failed" ? "failed" : "complete");
+        })
+        .catch((error) => {
+          setEssentiaReport({
+            status: "failed",
+            packageName: "essentia.js",
+            license: "AGPL-3.0",
+            wasmStatus: "failed",
+            judgement: "판단 불가",
+            judgementReason: "Essentia.js 실험 분석이 예외로 중단되었습니다.",
+            bpm: null,
+            candidates: [],
+            confidence: null,
+            failureReason:
+              error instanceof Error
+                ? error.message
+                : "Essentia.js 실험 분석 중 알 수 없는 오류가 발생했습니다.",
+            processingTimeMs: 0,
+            wasmLoadTimeMs: 0,
+            inputSampleRate: sampleRate,
+            analysisSampleRate: 44_100,
+            bufferDurationSeconds: sampleRate > 0 ? pcm.length / sampleRate : 0,
+            rms: 0,
+            peak: 0,
+            beatsCount: 0,
+            estimatesCount: 0,
+            intervalsCount: 0,
+            has132Bias: false,
+            silentFalsePositive: false
+          });
+          setEssentiaStatus("failed");
+        });
+    },
+    [isDebugMode]
+  );
 
   const showPermissionGuide = useCallback(() => {
     cleanupMeasurement();
@@ -100,6 +184,10 @@ export default function Home() {
   const finishMeasurement = useCallback(() => {
     const samples = [...energySamplesRef.current];
     const outcome = analyzeEnergySamples(samples);
+    const sampleRate = inputSampleRateRef.current || audioContextRef.current?.sampleRate || 0;
+    const pcm = isDebugMode
+      ? mergePcmChunks(pcmChunksRef.current, pcmSampleCountRef.current)
+      : new Float32Array();
 
     cleanupMeasurement();
 
@@ -107,13 +195,15 @@ export default function Home() {
       setResult(outcome);
       setUnstableReason("");
       setScreen("result");
+      runEssentiaComparison(outcome, pcm, sampleRate);
       return;
     }
 
     setResult(null);
     setUnstableReason(outcome.reason);
     setScreen("unstable-result");
-  }, [cleanupMeasurement]);
+    runEssentiaComparison(outcome, pcm, sampleRate);
+  }, [cleanupMeasurement, isDebugMode, runEssentiaComparison]);
 
   const collectEnergySample = useCallback(() => {
     const analyser = analyserNodeRef.current;
@@ -170,6 +260,28 @@ export default function Home() {
       frameDataRef.current = new Uint8Array(analyser.fftSize);
       measurementStartedAtRef.current = performance.now();
       energySamplesRef.current = [];
+      inputSampleRateRef.current = audioContext.sampleRate;
+      pcmChunksRef.current = [];
+      pcmSampleCountRef.current = 0;
+
+      if (isDebugMode) {
+        const processor = audioContext.createScriptProcessor(4096, 1, 1);
+        const silentGain = audioContext.createGain();
+        silentGain.gain.value = 0;
+        processor.onaudioprocess = (event) => {
+          const channelData = event.inputBuffer.getChannelData(0);
+          const copy = new Float32Array(channelData.length);
+          copy.set(channelData);
+          pcmChunksRef.current.push(copy);
+          pcmSampleCountRef.current += copy.length;
+        };
+        source.connect(processor);
+        processor.connect(silentGain);
+        silentGain.connect(audioContext.destination);
+        scriptProcessorNodeRef.current = processor;
+        silentGainNodeRef.current = silentGain;
+        setEssentiaStatus("collecting");
+      }
 
       setRemainingSeconds(INITIAL_REMAINING_SECONDS);
       setScreen("measuring");
@@ -410,6 +522,16 @@ export default function Home() {
           참고 후보로 확인해 주세요.
         </p>
       </section>
+
+      {isDebugMode && (
+        <EssentiaExperimentalPanel
+          status={essentiaStatus}
+          report={essentiaReport}
+          screen={screen}
+          v0Result={result}
+          unstableReason={unstableReason}
+        />
+      )}
     </main>
   );
 }
@@ -429,6 +551,120 @@ function StatusBadge({ screen }: { screen: MeasurementStatus }) {
     <div className="status-card" aria-label={`현재 상태 ${labels[screen]}`}>
       <span className="status-dot" aria-hidden="true" />
       <span>{labels[screen]}</span>
+    </div>
+  );
+}
+
+function EssentiaExperimentalPanel({
+  status,
+  report,
+  screen,
+  v0Result,
+  unstableReason
+}: {
+  status: "idle" | "collecting" | "loading" | "complete" | "failed";
+  report: EssentiaExperimentalReport | null;
+  screen: MeasurementStatus;
+  v0Result: BpmAnalysisSuccess | null;
+  unstableReason: string;
+}) {
+  const v0Summary =
+    screen === "result" && v0Result
+      ? `추천 BPM ${v0Result.recommendedBpm}, 신뢰도 ${v0Result.confidence}`
+      : screen === "unstable-result"
+        ? `불안정: ${unstableReason || "사유 없음"}`
+        : "측정 후 표시";
+
+  return (
+    <section className="debug-panel" aria-labelledby="essentia-title">
+      <h2 id="essentia-title">Essentia.js 실험 비교</h2>
+      <p>
+        ?debug=1에서만 표시됩니다. 기존 V0 결과를 대체하지 않으며 오디오 원본은 저장하거나
+        서버로 전송하지 않습니다.
+      </p>
+
+      <div className="debug-grid">
+        <DebugRow label="실험 상태" value={status} />
+        <DebugRow label="기존 V0 결과" value={v0Summary} />
+        <DebugRow label="패키지" value={report?.packageName ?? "essentia.js"} />
+        <DebugRow
+          label="라이선스"
+          value={`${report?.license ?? "AGPL-3.0"} - 정식 제품 도입 전 법적 검토 필요`}
+        />
+        <DebugRow label="WASM 로딩 상태" value={report?.wasmStatus ?? "not-loaded"} />
+        <DebugRow
+          label="Essentia.js 실험 결과"
+          value={
+            report?.bpm
+              ? `${report.bpm} BPM`
+              : report?.failureReason || "측정 완료 후 분석 결과 표시"
+          }
+        />
+        <DebugRow
+          label="가장 강한 후보"
+          value={report?.candidates[0]?.bpm ? `${report.candidates[0].bpm} BPM` : "-"}
+        />
+        <DebugRow
+          label="다른 후보"
+          value={
+            report && report.candidates.length > 1
+              ? report.candidates
+                  .slice(1)
+                  .map((candidate) => `${candidate.bpm} (${candidate.label})`)
+                  .join(", ")
+              : "-"
+          }
+        />
+        <DebugRow
+          label="confidence"
+          value={report?.confidence === null || !report ? "제공 없음" : String(report.confidence)}
+        />
+        <DebugRow
+          label="processing time"
+          value={report ? `${report.processingTimeMs} ms` : "-"}
+        />
+        <DebugRow label="WASM load time" value={report ? `${report.wasmLoadTimeMs} ms` : "-"} />
+        <DebugRow label="input sample rate" value={report ? `${report.inputSampleRate} Hz` : "-"} />
+        <DebugRow
+          label="analysis sample rate"
+          value={report ? `${report.analysisSampleRate} Hz` : "-"}
+        />
+        <DebugRow
+          label="buffer length"
+          value={report ? `${report.bufferDurationSeconds.toFixed(1)} sec` : "-"}
+        />
+        <DebugRow label="RMS" value={report ? report.rms.toFixed(4) : "-"} />
+        <DebugRow label="Peak" value={report ? report.peak.toFixed(4) : "-"} />
+        <DebugRow label="beat count" value={report ? String(report.beatsCount) : "-"} />
+        <DebugRow label="BPM estimate count" value={report ? String(report.estimatesCount) : "-"} />
+        <DebugRow label="BPM interval count" value={report ? String(report.intervalsCount) : "-"} />
+        <DebugRow label="132 쏠림 여부" value={report?.has132Bias ? "있음" : "없음"} />
+        <DebugRow
+          label="무음에서 후보 표시 여부"
+          value={report?.silentFalsePositive ? "표시됨" : "표시 안 됨"}
+        />
+        <DebugRow label="실패 reason" value={report?.failureReason || "-"} />
+        <DebugRow label="판단" value={report?.judgement ?? "판단 불가"} />
+        <DebugRow label="판단 이유" value={report?.judgementReason ?? "측정 후 표시"} />
+      </div>
+
+      <div className="debug-note">
+        <h3>PM 기록 그룹</h3>
+        <p>
+          Metronome 90/120/128, 스윙 재즈, R&B/뉴올리언스, 빅밴드, 무음 테스트를
+          분리해서 기록하세요. Go 기준은 metronome ±5 BPM 통과와 타깃 장르 10곡 중 5곡
+          이상 개선입니다.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function DebugRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="debug-row">
+      <span>{label}</span>
+      <strong>{value}</strong>
     </div>
   );
 }
