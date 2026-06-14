@@ -129,8 +129,8 @@ check_no_tracked_match \
 
 check_no_tracked_match \
   "Superpowered binary/header files" \
-  '(\.xcframework($|/)|\.framework($|/)|\.a$|\.dylib$|(^|/)Superpowered[^/]*\.h$)' \
-  "remove SDK binary/header files from Git"
+  '(^|/)ios/Vendor/Superpowered/.*(\.xcframework($|/)|\.framework($|/)|\.a$|\.dylib$|\.h$)|^native-ios/BPM-native-field-poc/ios/Vendor/Superpowered/.*(\.xcframework($|/)|\.framework($|/)|\.a$|\.dylib$|\.h$)' \
+  "remove Superpowered SDK binary/header files from Git; app bridge source files are allowed"
 
 check_no_tracked_match \
   "raw audio files" \

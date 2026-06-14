@@ -95,7 +95,7 @@ The harness checks:
 - `Info.plist`
 - `project.pbxproj`
 - Superpowered SDK folder tracked status
-- Superpowered binary/header tracked status
+- Superpowered SDK binary/header tracked status under `ios/Vendor/Superpowered/`
 - `LocalSuperpoweredConfig.xcconfig` tracked status
 - license key assignment in tracked files
 - raw audio files tracked status
@@ -134,13 +134,18 @@ The harness fails if these are tracked:
 - `ios/Vendor/Superpowered/`
 - `native-ios/BPM-native-field-poc/ios/Vendor/Superpowered/`
 - `LocalSuperpoweredConfig.xcconfig`
-- SDK binary/header files
+- SDK binary/header files under `ios/Vendor/Superpowered/` or `native-ios/BPM-native-field-poc/ios/Vendor/Superpowered/`
   - `.xcframework`
   - `.framework`
   - `.a`
   - `.dylib`
-  - `Superpowered.h`
-  - `Superpowered*.h`
+  - `.h`
+
+App bridge source files outside the SDK folder are allowed, including:
+
+- `SuperpoweredLiveAnalyzerBridge.h`
+- `SuperpoweredLiveAnalyzerBridge.mm`
+- `SuperpoweredBridgeAdapter.swift`
 - `.DS_Store`
 - `xcuserdata`
 - `*.xcuserstate`
