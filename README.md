@@ -35,11 +35,29 @@
 ```text
 BPM/
 ├── README.md
+├── AGENTS.md
+├── README_FOR_PM.md
 ├── archive/
 │   └── mobile-web/
+├── docs/
 └── native-ios/
     └── BPM-native-field-poc/
 ```
+
+## 기준 문서
+
+현재 작업 기준은 root 문서입니다. `archive/mobile-web/` 아래 문서는 이전 웹 PoC 기록입니다.
+
+- PM 운영 안내: [README_FOR_PM.md](README_FOR_PM.md)
+- Codex/에이전트 작업 규칙: [AGENTS.md](AGENTS.md)
+- 제품 요구사항: [docs/product/PRD.md](docs/product/PRD.md)
+- 기술 기준: [docs/product/TRD.md](docs/product/TRD.md)
+- Local Beta 범위: [docs/product/MVP_SCOPE.md](docs/product/MVP_SCOPE.md)
+- native iOS workflow: [docs/product/NATIVE_IOS_WORKFLOW.md](docs/product/NATIVE_IOS_WORKFLOW.md)
+- beta 전략: [docs/product/BETA_RELEASE_STRATEGY.md](docs/product/BETA_RELEASE_STRATEGY.md)
+- Stitch UI 계획: [docs/product/LOCAL_BETA_AND_STITCH_UI_PLAN.md](docs/product/LOCAL_BETA_AND_STITCH_UI_PLAN.md)
+- rules index: [docs/README.md](docs/README.md)
+- harness: [docs/harness/native-ios-harness-check.md](docs/harness/native-ios-harness-check.md)
 
 ### `archive/mobile-web/`
 
@@ -109,8 +127,8 @@ Half / Base / Double 후보, Superpowered raw output, 기존 자체 PoC baseline
 ## 주요 기능
 
 - 네이티브 iOS 마이크 입력
-- 기본 35초 자동 측정
-- 불안정 후보를 위한 50초 재측정 흐름
+- 기본 25초 자동 측정
+- 불안정 후보를 위한 `30S` 재측정 흐름
 - 큰 정수 BPM 후보 표시
 - Input Stability 그래프
 - Stitch mockup을 참고한 한국어 Local Beta UI
