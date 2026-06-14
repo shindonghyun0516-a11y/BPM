@@ -1,145 +1,145 @@
-# QA-4 Buffer Periodicity Failure
+# QA-4 Buffer Periodicity 실패 기록
 
-## 1. Purpose
+## 1. 목적
 
-This document records why PoC-4 is considered a failed BPM analysis experiment.
+이 문서는 PoC-4를 실패한 BPM 분석 실험으로 판단한 이유를 기록한다.
 
-PoC-4 tested whether a 20-second in-memory audio buffer could be converted into an onset envelope and periodicity-based BPM candidate.
+PoC-4는 20초 메모리 내 오디오 버퍼를 onset envelope로 변환하고, periodicity 기반 BPM 후보를 만들 수 있는지 테스트했다.
 
-The result is important because it separates:
+이 결과가 중요한 이유는 아래 항목을 분리하기 위해서다.
 
-- Project direction: still valid as iPhone microphone field BPM analysis.
-- PoC-4 in-house algorithm: failed current QA.
-- Privacy and buffer lifecycle: mostly passed.
+- 프로젝트 방향: iPhone 마이크 기반 현장 BPM 분석으로 여전히 유효하다.
+- PoC-4 자체 알고리즘: 현재 QA에서는 실패했다.
+- 개인정보 원칙과 buffer lifecycle: 대부분 통과했다.
 
-## 2. PoC-4 Goal
+## 2. PoC-4 목표
 
-PoC-4 attempted to:
+PoC-4는 아래를 시도했다.
 
-1. Keep the latest 20 seconds of raw audio only in RAM.
-2. Clear the raw buffer on stop, background, error, or deinit.
-3. Calculate frame energy.
-4. Build an onset envelope.
-5. Analyze periodicity or autocorrelation-like repetition.
-6. Produce BPM candidates.
-7. Show 0.5x / 1x / 2x candidates.
-8. Avoid showing candidates for silence or insufficient input.
+1. 최신 20초 원본 오디오를 RAM 안에만 유지한다.
+2. 중지, 백그라운드 진입, 오류, deinit 시 원본 buffer를 clear한다.
+3. 프레임 energy를 계산한다.
+4. onset envelope를 만든다.
+5. periodicity 또는 autocorrelation 유사 반복성을 분석한다.
+6. BPM 후보를 산출한다.
+7. 0.5x / 1x / 2x 후보를 표시한다.
+8. 무음 또는 입력 부족 상태에서는 후보를 표시하지 않는다.
 
-PoC-4 was not a production BPM feature.
+PoC-4는 제품용 BPM 기능이 아니다.
 
-## 3. QA-4 Test Environment
+## 3. QA-4 테스트 환경
 
-| Item | Value |
+| 항목 | 값 |
 |---|---|
-| iPhone model | iPhone 17 |
-| iOS version | iOS 26.2 |
-| Test place | Quiet room |
-| Playback source | Application |
-| Test date | 6/3 |
-| Branch | issue-poc-4-buffer-periodicity |
+| iPhone 모델 | iPhone 17 |
+| iOS 버전 | iOS 26.2 |
+| 테스트 장소 | 조용한 방 |
+| 재생 소스 | 애플리케이션 |
+| 테스트 날짜 | 6/3 |
+| 브랜치 | issue-poc-4-buffer-periodicity |
 
-## 4. QA-4 Result Summary
+## 4. QA-4 결과 요약
 
-| Test | Result |
+| 테스트 | 결과 |
 |---|---|
-| Metronome 90 BPM, 3 runs | Failed, no candidate |
-| Metronome 120 BPM, 3 runs | Failed, no candidate |
-| Metronome 128 BPM, 3 runs | Failed, no candidate |
-| Small volume metronome | Failed, no candidate |
-| Large volume metronome | Failed, no candidate |
-| Swing jazz test song | Candidate appeared, but PM judged failed |
-| R&B / New Orleans test song | Candidate appeared, but PM judged failed |
-| Buffer clear after stop | Passed |
-| Buffer clear after background | Passed |
-| Previous/new measurement separation | Passed |
-| Raw audio file storage | None |
-| Raw audio server upload | None |
+| 메트로놈 90 BPM, 3회 | 실패, 후보 없음 |
+| 메트로놈 120 BPM, 3회 | 실패, 후보 없음 |
+| 메트로놈 128 BPM, 3회 | 실패, 후보 없음 |
+| 작은 볼륨 메트로놈 | 실패, 후보 없음 |
+| 큰 볼륨 메트로놈 | 실패, 후보 없음 |
+| 스윙 재즈 테스트곡 | 후보는 표시되었지만 PM 판단상 실패 |
+| R&B / 뉴올리언스 테스트곡 | 후보는 표시되었지만 PM 판단상 실패 |
+| 중지 후 buffer clear | 통과 |
+| 백그라운드 진입 후 buffer clear | 통과 |
+| 이전/새 측정 분리 | 통과 |
+| 원본 오디오 파일 저장 | 없음 |
+| 원본 오디오 서버 전송 | 없음 |
 
-## 5. What Worked
+## 5. 동작한 부분
 
-The following parts worked:
+아래 부분은 동작했다.
 
-- App launches.
-- Measurement starts.
-- 20-second listening flow can be performed.
-- Buffer clear after stop works.
-- Buffer clear after background works.
-- Previous and new measurement values do not appear to mix.
-- Raw audio is not saved to a file.
-- Raw audio is not sent to a server.
+- 앱이 실행된다.
+- 측정을 시작할 수 있다.
+- 20초 청취 흐름을 수행할 수 있다.
+- 중지 후 buffer clear가 동작한다.
+- 백그라운드 진입 후 buffer clear가 동작한다.
+- 이전 측정값과 새 측정값이 섞이지 않는 것으로 보인다.
+- 원본 오디오를 파일로 저장하지 않는다.
+- 원본 오디오를 서버로 전송하지 않는다.
 
-These are useful for later engine Spike work.
+이 부분은 이후 엔진 Spike 작업에 유용하다.
 
-## 6. What Failed
+## 6. 실패한 부분
 
-The core BPM analysis goal failed.
+핵심 BPM 분석 목표는 실패했다.
 
-Failures:
+실패 항목:
 
-- 90 BPM metronome did not produce a candidate.
-- 120 BPM metronome did not produce a candidate.
-- 128 BPM metronome did not produce a candidate.
-- Small and large volume metronome tests also did not produce candidates.
-- Real music candidates were not judged usable.
+- 90 BPM 메트로놈에서 후보가 나오지 않았다.
+- 120 BPM 메트로놈에서 후보가 나오지 않았다.
+- 128 BPM 메트로놈에서 후보가 나오지 않았다.
+- 작은 볼륨과 큰 볼륨 메트로놈 테스트에서도 후보가 나오지 않았다.
+- 실제 음악 후보는 실용적이라고 판단되지 않았다.
 
-Because metronome failed, this is not only a swing/R&B field music issue.
+메트로놈에서 실패했기 때문에, 이 문제는 swing/R&B 현장 음악만의 문제가 아니다.
 
-## 7. Failure Hypotheses
+## 7. 실패 원인 가설
 
-Possible failure points:
+가능한 실패 지점:
 
-1. The onset envelope may not form strongly enough from the metronome input.
-2. Active envelope thresholds may be filtering out valid rhythm.
-3. Periodicity score threshold may be too strict or miscalibrated.
-4. Lag-to-BPM mapping may be wrong or too coarse.
-5. Candidate gating may reject valid periodicity peaks.
-6. The current in-house periodicity algorithm may be too immature.
+1. onset envelope가 metronome 입력에서 충분히 강하게 형성되지 않았을 수 있다.
+2. active envelope threshold가 유효한 리듬까지 걸러냈을 수 있다.
+3. periodicity score threshold가 너무 엄격하거나 calibration이 맞지 않았을 수 있다.
+4. lag-to-BPM mapping이 틀렸거나 너무 거칠었을 수 있다.
+5. 후보 gate가 유효한 periodicity peak를 거절했을 수 있다.
+6. 현재 자체 periodicity 알고리즘이 아직 충분히 성숙하지 않았을 수 있다.
 
-The QA record did not include enough detailed values such as reason, frame count, envelope sample count, active ratio, and top periodicity peaks. That limits exact diagnosis.
+QA 기록에는 사유, 프레임 수, envelope sample 수, active ratio, 상위 periodicity peak 같은 상세 값이 충분히 포함되지 않았다. 그래서 정확한 진단에는 한계가 있다.
 
-## 8. PM Decision
+## 8. PM 결정
 
-PM decision:
+PM 결정:
 
-- PoC-4 failed.
-- Do not commit PoC-4 as a successful feature.
-- Do not continue tuning the same in-house periodicity algorithm for now.
-- Preserve the result as a failed experiment.
-- Move to a proven BPM / beat tracking engine Spike.
-- First engine candidate: Superpowered LiveAnalyzer.
-- If Superpowered is unsuitable, evaluate aubio Native Spike.
+- PoC-4는 실패로 본다.
+- PoC-4를 성공 기능으로 커밋하지 않는다.
+- 같은 자체 periodicity 알고리즘을 계속 튜닝하지 않는다.
+- 결과는 실패 실험으로 보존한다.
+- 검증된 BPM / beat tracking 엔진 Spike로 이동한다.
+- 첫 번째 엔진 후보는 Superpowered LiveAnalyzer다.
+- Superpowered가 부적합하면 aubio Native Spike를 검토한다.
 
-## 9. Process Update From Research
+## 9. 리서치 이후 프로세스 업데이트
 
-Additional research confirms that speaker-to-room-to-iPhone-mic testing is unstable but still relevant.
+추가 리서치는 스피커에서 공간을 거쳐 iPhone 마이크로 들어오는 테스트가 불안정하지만 여전히 관련이 있다는 점을 확인했다.
 
-Updated process:
+업데이트된 프로세스:
 
-- Keep the Product lane as iPhone microphone-based field BPM analysis.
-- Use Bench lane tests to separate acoustic path failure from algorithm failure.
-- Use Annotation lane only as reference, not product input.
-- Do not make Tap, BLE, IMU, file upload, link lookup, or desktop system audio the main product direction.
+- 제품 레인은 iPhone 마이크 기반 현장 BPM 분석으로 유지한다.
+- 벤치 레인 테스트로 음향 경로 실패와 알고리즘 실패를 분리한다.
+- 주석 레인은 기준값으로만 사용하고 제품 입력으로 사용하지 않는다.
+- Tap, BLE, IMU, 파일 업로드, 링크 조회, 데스크톱 시스템 오디오를 메인 제품 방향으로 만들지 않는다.
 
-## 10. Do Not Repeat
+## 10. 반복하지 말아야 할 것
 
-Do not repeat the following:
+아래를 반복하지 않는다.
 
-- Do not keep tuning PoC-4 periodicity after metronome fails.
-- Do not jump to swing/R&B field music before metronome failure is explained.
-- Do not mix PoC-4 failed code into the Superpowered Spike.
-- Do not interpret "candidate appeared" as success if metronome baseline fails.
-- Do not treat speaker tests as the only source of truth.
-- Do not add Tap/BLE/IMU as product input without a separate PM decision.
-- Do not store raw audio.
-- Do not upload raw audio.
-- Do not print raw audio samples in debug.
+- 메트로놈에서 실패한 뒤 PoC-4 periodicity를 계속 튜닝하지 않는다.
+- 메트로놈 실패를 설명하기 전에 swing/R&B 현장 음악으로 넘어가지 않는다.
+- PoC-4 실패 코드를 Superpowered Spike에 섞지 않는다.
+- 메트로놈 기준선이 실패했는데 “후보 표시됨”만 보고 성공으로 해석하지 않는다.
+- 스피커 테스트를 유일한 정답으로 취급하지 않는다.
+- 별도 PM 결정 없이 Tap/BLE/IMU를 제품 입력으로 추가하지 않는다.
+- 원본 오디오를 저장하지 않는다.
+- 원본 오디오를 업로드하지 않는다.
+- 원본 오디오 sample을 디버그에 출력하지 않는다.
 
-## 11. Next Step
+## 11. 다음 단계
 
-Recommended next step:
+권장 다음 단계:
 
-1. Keep PoC-4 code uncommitted or preserve it in a stash/backup branch.
-2. Start Superpowered LiveAnalyzer Spike from a clean base.
-3. Compare Superpowered against the PoC-4 baseline results.
-4. Run metronome 90 / 120 / 128 before any swing/R&B product QA.
-5. If Superpowered fails basic metronome QA, evaluate aubio Native Spike.
+1. PoC-4 코드는 미커밋 상태로 두거나 stash/backup branch에 보존한다.
+2. 깨끗한 기준에서 Superpowered LiveAnalyzer Spike를 시작한다.
+3. Superpowered 결과를 PoC-4 기준선 결과와 비교한다.
+4. swing/R&B 제품 QA 전에 메트로놈 90 / 120 / 128 테스트를 먼저 수행한다.
+5. Superpowered가 기본 메트로놈 QA에 실패하면 aubio Native Spike를 검토한다.

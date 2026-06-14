@@ -1,239 +1,239 @@
-# Mic-Only Feasibility And QA Lanes
+# 마이크 기반 BPM 분석 가능성과 QA 레인
 
-## 1. Purpose
+## 1. 목적
 
-This document records the current product and QA direction after reviewing additional research on microphone-only BPM detection, speaker-based testing limits, and alternative reference inputs.
+이 문서는 마이크만 사용하는 BPM 감지, 스피커 기반 테스트의 한계, 대체 기준 입력에 대한 추가 리서치 이후의 제품 방향과 QA 방향을 기록한다.
 
-The goal is to prevent the team from repeating earlier failed loops:
+목표는 이전에 실패했던 반복을 다시 밟지 않는 것이다.
 
-- Treating an uncontrolled speaker test as the only truth.
-- Treating tap, BLE, IMU, file analysis, or link lookup as the main product direction.
-- Continuing to tune a weak in-house algorithm without separating product, bench, and annotation evidence.
+- 통제되지 않은 스피커 테스트 하나를 유일한 정답처럼 취급하지 않는다.
+- tap, BLE, IMU, 파일 분석, 링크 조회를 메인 제품 방향으로 바꾸지 않는다.
+- 제품, 벤치, 주석 근거를 분리하지 않은 채 약한 자체 알고리즘을 계속 튜닝하지 않는다.
 
-## 2. Mic-Only BPM Analysis Is Not Impossible
+## 2. 마이크만으로 BPM 분석이 불가능한 것은 아니다
 
-Microphone-only BPM analysis is technically possible. A microphone input can contain repeated rhythmic energy from drums, bass, piano attack, brass attack, claps, and venue sound.
+마이크만 사용하는 BPM 분석은 기술적으로 가능하다. 마이크 입력에는 드럼, 베이스, 피아노 어택, 브라스 어택, 박수, 공간음에서 오는 반복적인 리듬 에너지가 들어갈 수 있다.
 
-The important distinction is:
+중요한 구분은 다음과 같다.
 
-- Possible: the microphone contains rhythmic information.
-- Reliable in every field condition: not guaranteed.
+- 가능함: 마이크 입력에는 리듬 정보가 포함될 수 있다.
+- 모든 현장 조건에서 항상 안정적임: 보장되지 않는다.
 
-For this project, the product target remains:
+이 프로젝트의 제품 목표는 여전히 다음과 같다.
 
-> An iPhone listens to venue speaker or live music through the microphone and automatically shows practical BPM candidates.
+> iPhone이 마이크로 현장 스피커 또는 라이브 음악을 듣고, 실용적인 BPM 후보를 자동으로 보여준다.
 
-The product should show candidates and confidence, not pretend that every result is a single exact truth.
+제품은 모든 결과를 하나의 정확한 정답처럼 보여주면 안 된다. 후보와 신뢰 근거를 함께 보여줘야 한다.
 
-## 3. Limits Of Speaker-Based Testing
+## 3. 스피커 기반 테스트의 한계
 
-Speaker-based tests add an extra acoustic path:
+스피커 기반 테스트에는 추가 음향 경로가 들어간다.
 
 ```text
-source app or metronome
--> speaker
--> room air / reflections / distance / distortion
--> iPhone microphone
--> analysis
+소스 앱 또는 메트로놈
+-> 스피커
+-> 실내 공기 / 반사음 / 거리 / 왜곡
+-> iPhone 마이크
+-> 분석
 ```
 
-This path can change the signal before the app analyzes it.
+이 경로는 앱이 분석하기 전에 신호를 바꿀 수 있다.
 
-Main risks:
+주요 위험:
 
-- Room reflections can duplicate or smear onsets.
-- Small speakers can weaken bass or kick information.
-- Bluetooth or playback routes can add delay.
-- Distance and angle change input level and transient shape.
-- Loud playback can distort or clip.
-- Quiet playback can fall under noise floor.
-- iOS audio session mode, AGC, noise suppression, or voice processing can alter the signal.
+- 공간 반사음이 onset을 중복시키거나 흐릴 수 있다.
+- 작은 스피커는 베이스나 킥 정보를 약하게 만들 수 있다.
+- Bluetooth 또는 재생 경로가 지연을 추가할 수 있다.
+- 거리와 각도가 입력 레벨과 transient 모양을 바꿀 수 있다.
+- 큰 볼륨은 왜곡이나 clipping을 만들 수 있다.
+- 작은 볼륨은 노이즈 플로어 아래로 묻힐 수 있다.
+- iOS 오디오 세션 모드, AGC, 노이즈 억제, 음성 처리 설정이 신호를 바꿀 수 있다.
 
-Therefore, a speaker test is useful but should not be the only evidence for algorithm quality.
+따라서 스피커 테스트는 유용하지만 알고리즘 품질의 유일한 근거가 되어서는 안 된다.
 
-## 4. Product Lane
+## 4. 제품 레인
 
-The Product lane is the actual product direction.
+제품 레인은 실제 제품 방향이다.
 
-### Product lane input
+### 제품 레인 입력
 
-- iPhone built-in microphone
-- Venue speaker sound
-- Live music
-- Real room noise and reflections
+- iPhone 내장 마이크
+- 현장 스피커 소리
+- 라이브 음악
+- 실제 공간 소음과 반사음
 
-### Product lane output
+### 제품 레인 출력
 
-- BPM candidates
-- Half / base / double candidates
-- Confidence
-- No-result reason
-- Input level
-- Analysis state
+- BPM 후보
+- Half / Base / Double 후보
+- 신뢰도
+- 결과 없음 사유
+- 입력 레벨
+- 분석 상태
 
-### Product lane non-goals
+### 제품 레인 비목표
 
-- Tap-first UX
-- BLE sensor as main input
-- IMU as main input
-- Local file upload as main input
-- Link or BPM database lookup as main input
-- Desktop system audio as main input
+- 탭 우선 UX
+- BLE 센서를 메인 입력으로 사용
+- IMU를 메인 입력으로 사용
+- 로컬 파일 업로드를 메인 입력으로 사용
+- 링크 또는 BPM 데이터베이스 조회를 메인 입력으로 사용
+- 데스크톱 시스템 오디오를 메인 입력으로 사용
 
-## 5. Bench Lane
+## 5. 벤치 레인
 
-The Bench lane is for controlled algorithm verification. It is not product UX.
+벤치 레인은 통제된 알고리즘 검증용이다. 제품 UX가 아니다.
 
-Bench lane answers:
+벤치 레인이 답해야 하는 질문:
 
-- Does the algorithm work when the input is controlled?
-- Is the failure caused by the acoustic path or the algorithm?
-- Are lag-to-BPM mapping, thresholds, and confidence gates reasonable?
+- 입력이 통제된 상태에서 알고리즘이 동작하는가?
+- 실패 원인이 음향 경로인지 알고리즘인지 구분할 수 있는가?
+- lag-to-BPM 변환, threshold, 신뢰도 gate가 합리적인가?
 
-Possible bench inputs:
+가능한 벤치 입력:
 
-- Metronome 90 / 120 / 128 BPM
-- Fixed speaker distance and angle
-- Wired loopback
-- Frequency-tagged QA assets
-- Sync chirp or tagged test files
-- Known BPM test loops
+- 메트로놈 90 / 120 / 128 BPM
+- 고정된 스피커 거리와 각도
+- 유선 루프백
+- 주파수 태그가 있는 QA 자산
+- sync chirp 또는 태그가 있는 테스트 파일
+- 알려진 BPM 테스트 루프
 
-Bench lane metrics:
+벤치 레인 지표:
 
-- Buffer duration
-- Frame count
-- Envelope sample count
-- Active envelope ratio
-- Top periodicity peaks
-- Candidate list
-- Half / base / double candidates
-- False positives in silence
-- Reason for no-result
+- 버퍼 길이
+- 프레임 수
+- envelope sample 수
+- active envelope 비율
+- 상위 periodicity peak
+- 후보 목록
+- Half / Base / Double 후보
+- 무음 오탐
+- 결과 없음 사유
 
-Bench lane is allowed to use controlled reference signals, but those are not product features.
+벤치 레인에서는 통제된 기준 신호를 사용할 수 있다. 단, 이것은 제품 기능이 아니다.
 
-## 6. Annotation Lane
+## 6. 주석 레인
 
-The Annotation lane provides human or external reference values.
+주석 레인은 사람 또는 외부 기준값을 제공한다.
 
-Possible annotation sources:
+가능한 주석 출처:
 
-- Known BPM from PM notes
-- External BPM checker result
-- DAW or DJ software result
-- Human tap tempo reference
-- IMU or BLE timestamp reference, if later approved
+- PM 기록의 알려진 BPM
+- 외부 BPM checker 결과
+- DAW 또는 DJ software 결과
+- 사람이 직접 tap tempo로 기록한 기준값
+- 추후 승인된 경우 IMU 또는 BLE timestamp 기준값
 
-Annotation is useful for comparing candidate quality, but it must not become the main product input.
+주석은 후보 품질을 비교하는 데 유용하다. 하지만 메인 제품 입력이 되어서는 안 된다.
 
-## 7. Why Tap, BLE, And IMU Are Not Main Product Inputs
+## 7. Tap, BLE, IMU를 메인 제품 입력으로 두지 않는 이유
 
-Tap-first is not the main direction because the user does not want to manually tap the beat.
+Tap-first는 사용자가 직접 박자를 눌러야 하므로 메인 방향이 아니다.
 
-BLE and IMU are not the main direction because they add device or movement requirements and shift the product away from listening to field music.
+BLE와 IMU는 별도 기기나 움직임 조건을 추가하며, 제품을 “현장 음악을 듣는 앱”이라는 방향에서 벗어나게 한다.
 
-Allowed role:
+허용되는 역할:
 
-- Reference
-- Annotation
-- QA control channel
+- 기준값
+- 주석
+- QA 제어 채널
 
-Disallowed role for the current product lane:
+현재 제품 레인에서 허용되지 않는 역할:
 
-- Primary BPM input
-- Replacement for microphone-based analysis
+- 1차 BPM 입력
+- 마이크 기반 분석 대체
 
-## 8. PoC-4 QA Principles Going Forward
+## 8. 향후 PoC-4 QA 원칙
 
-PoC-4 QA must be split into Product lane and Bench lane.
+PoC-4 QA는 제품 레인과 벤치 레인으로 나누어야 한다.
 
-### Product lane QA
+### 제품 레인 QA
 
-Use cases:
+사용 케이스:
 
-- Jazz club-like speaker playback
-- Cafe or practice room playback
-- Swing jazz
+- 재즈 클럽과 유사한 스피커 재생
+- 카페 또는 연습실 재생
+- 스윙 재즈
 - R&B
-- New Orleans
-- Big band
-- Live-like room sound
+- 뉴올리언스
+- 빅밴드
+- 라이브와 유사한 공간음
 
-Judgment:
+판단 기준:
 
-- Does the app show practical BPM candidates?
-- Does it avoid overclaiming?
-- Does it expose half/base/double ambiguity?
-- Does it show a clear no-result reason?
+- 앱이 실용적인 BPM 후보를 보여주는가?
+- 결과를 과장하지 않는가?
+- half/base/double 모호성을 드러내는가?
+- 명확한 결과 없음 사유를 보여주는가?
 
-### Bench lane QA
+### 벤치 레인 QA
 
-Use cases:
+사용 케이스:
 
-- Metronome 90 / 120 / 128 BPM
-- Silence
-- Small / normal / large volume
-- Fixed distance and angle
-- Wired loopback or tagged QA assets, if later approved
+- 메트로놈 90 / 120 / 128 BPM
+- 무음
+- 작은 / 보통 / 큰 볼륨
+- 고정된 거리와 각도
+- 추후 승인된 경우 유선 루프백 또는 태그가 있는 QA 자산
 
-Judgment:
+판단 기준:
 
-- Does metronome produce expected candidates?
-- Is no-result reason clear?
-- Is silence false positive avoided?
-- Does debug show enough values to find the failure stage?
+- 메트로놈에서 기대 후보가 나오는가?
+- 결과 없음 사유가 명확한가?
+- 무음 오탐을 피하는가?
+- 디버그 값이 실패 단계를 찾기에 충분한가?
 
-## 9. PM Testing Checklist
+## 9. PM 테스트 체크리스트
 
-When recording future tests, include:
+향후 테스트 기록에는 아래 항목을 포함한다.
 
-- Lane: Product / Bench / Annotation
-- Test input
-- Known BPM or expected BPM
-- Device
-- iOS version
-- Playback device
-- Distance and angle
-- Volume
-- Room condition
+- 레인: 제품 / 벤치 / 주석
+- 테스트 입력
+- 알려진 BPM 또는 기대 BPM
+- 기기
+- iOS 버전
+- 재생 장치
+- 거리와 각도
+- 볼륨
+- 공간 조건
 - RMS
 - Peak
-- Buffer duration
-- Frame count
-- Envelope sample count
-- Top periodicity peaks
-- Candidate list
-- Half candidate
-- Base candidate
-- Double candidate
-- Confidence
-- Reason
-- PM judgment
+- 버퍼 길이
+- 프레임 수
+- envelope sample 수
+- 상위 periodicity peak
+- 후보 목록
+- Half 후보
+- Base 후보
+- Double 후보
+- 신뢰도
+- 사유
+- PM 판단
 
-If a result is missing, record it as missing instead of guessing.
+결과가 없으면 추측하지 말고 “없음”으로 기록한다.
 
-## 10. Do Not Repeat These Failures
+## 10. 반복하지 말아야 할 실패
 
-Do not repeat the following past mistakes:
+아래 과거 실수를 반복하지 않는다.
 
-- Do not keep tuning the same weak local-peak or periodicity algorithm after metronome fails.
-- Do not treat a single speaker setup as the final truth.
-- Do not move to swing/R&B field music before metronome and silence tests are understood.
-- Do not mix live values and result snapshots in QA records.
-- Do not call a numeric score "confidence" unless it is mapped to low / medium / high.
-- Do not display candidates as if they are final BPM truth.
-- Do not add Tap, BLE, IMU, file upload, link lookup, or desktop system audio as the main product input without a new product decision.
-- Do not store raw audio.
-- Do not send raw audio to a server.
-- Do not print raw audio samples in debug or logs.
+- 메트로놈에서 실패한 뒤에도 같은 약한 local-peak 또는 periodicity 알고리즘만 계속 튜닝하지 않는다.
+- 단일 스피커 설정을 최종 정답처럼 취급하지 않는다.
+- 메트로놈과 무음 테스트를 이해하기 전에 swing/R&B 현장 음악으로 넘어가지 않는다.
+- QA 기록에서 live 값과 result snapshot을 섞지 않는다.
+- 낮음 / 중간 / 높음으로 매핑되지 않은 숫자 점수를 신뢰도라고 부르지 않는다.
+- 후보를 최종 BPM 정답처럼 표시하지 않는다.
+- 별도 제품 결정 없이 Tap, BLE, IMU, 파일 업로드, 링크 조회, 데스크톱 시스템 오디오를 메인 제품 입력으로 추가하지 않는다.
+- 원본 오디오를 저장하지 않는다.
+- 원본 오디오를 서버로 전송하지 않는다.
+- 원본 오디오 sample을 디버그 또는 로그에 출력하지 않는다.
 
-## 11. Next Codex Work
+## 11. 다음 Codex 작업
 
-Recommended next work:
+권장 다음 작업:
 
-1. Document PoC-4 failure separately.
-2. Preserve PoC-4 code as failed experiment or stash.
-3. Start Superpowered LiveAnalyzer Spike from a clean base.
-4. Keep PoC-4 result as baseline, not as product logic.
-5. If Superpowered fails, evaluate aubio Native Spike.
+1. PoC-4 실패를 별도 문서로 기록한다.
+2. PoC-4 코드를 실패 실험으로 보존하거나 stash한다.
+3. 깨끗한 기준에서 Superpowered LiveAnalyzer Spike를 시작한다.
+4. PoC-4 결과는 제품 로직이 아니라 기준선으로만 유지한다.
+5. Superpowered가 실패하면 aubio Native Spike를 검토한다.
