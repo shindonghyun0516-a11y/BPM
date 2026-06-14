@@ -1,0 +1,9 @@
+.DS_Store
+xcuserdata/
+DerivedData/
+build/
+*.xcuserstate
+
+# Superpowered local SDK and license config must stay outside Git.
+ios/Vendor/Superpowered/
+ios/Config/LocalSuperpoweredConfig.xcconfig

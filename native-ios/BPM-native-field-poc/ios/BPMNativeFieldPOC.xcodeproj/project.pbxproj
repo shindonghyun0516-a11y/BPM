@@ -1,0 +1,399 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		3A4E00000000000000000011 /* BPMNativeFieldPOCApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A4E00000000000000000001 /* BPMNativeFieldPOCApp.swift */; };
+		3A4E00000000000000000012 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A4E00000000000000000002 /* ContentView.swift */; };
+		3A4E00000000000000000013 /* AudioInputMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A4E00000000000000000003 /* AudioInputMonitor.swift */; };
+		3A4E00000000000000000014 /* AudioInputState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A4E00000000000000000004 /* AudioInputState.swift */; };
+		3A4E00000000000000000015 /* SuperpoweredBridgeAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A4E00000000000000000007 /* SuperpoweredBridgeAdapter.swift */; };
+		3A4E00000000000000000016 /* SuperpoweredLiveAnalyzerBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3A4E00000000000000000009 /* SuperpoweredLiveAnalyzerBridge.mm */; };
+		3A4E00000000000000000017 /* libSuperpoweredAudio.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3A4E0000000000000000000C /* libSuperpoweredAudio.xcframework */; };
+		3A4E00000000000000000018 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3A4E0000000000000000000D /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		3A4E00000000000000000001 /* BPMNativeFieldPOCApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BPMNativeFieldPOCApp.swift; sourceTree = "<group>"; };
+		3A4E00000000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		3A4E00000000000000000003 /* AudioInputMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioInputMonitor.swift; sourceTree = "<group>"; };
+		3A4E00000000000000000004 /* AudioInputState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioInputState.swift; sourceTree = "<group>"; };
+		3A4E00000000000000000005 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		3A4E00000000000000000006 /* BPMNativeFieldPOC.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BPMNativeFieldPOC.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3A4E00000000000000000007 /* SuperpoweredBridgeAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuperpoweredBridgeAdapter.swift; sourceTree = "<group>"; };
+		3A4E00000000000000000008 /* SuperpoweredLiveAnalyzerBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SuperpoweredLiveAnalyzerBridge.h; sourceTree = "<group>"; };
+		3A4E00000000000000000009 /* SuperpoweredLiveAnalyzerBridge.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = SuperpoweredLiveAnalyzerBridge.mm; sourceTree = "<group>"; };
+		3A4E0000000000000000000A /* BPMNativeFieldPOC-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "BPMNativeFieldPOC-Bridging-Header.h"; sourceTree = "<group>"; };
+		3A4E0000000000000000000B /* SuperpoweredBuild.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config/SuperpoweredBuild.xcconfig; sourceTree = SOURCE_ROOT; };
+		3A4E0000000000000000000C /* libSuperpoweredAudio.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = Vendor/Superpowered/libSuperpoweredAudio.xcframework; sourceTree = SOURCE_ROOT; };
+		3A4E0000000000000000000D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		3A4E00000000000000000020 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3A4E00000000000000000017 /* libSuperpoweredAudio.xcframework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		3A4E00000000000000000030 = {
+			isa = PBXGroup;
+			children = (
+				3A4E00000000000000000033 /* Config */,
+				3A4E00000000000000000031 /* BPMNativeFieldPOC */,
+				3A4E00000000000000000034 /* Vendor */,
+				3A4E00000000000000000032 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		3A4E00000000000000000031 /* BPMNativeFieldPOC */ = {
+			isa = PBXGroup;
+			children = (
+				3A4E00000000000000000001 /* BPMNativeFieldPOCApp.swift */,
+				3A4E00000000000000000002 /* ContentView.swift */,
+				3A4E00000000000000000003 /* AudioInputMonitor.swift */,
+				3A4E00000000000000000004 /* AudioInputState.swift */,
+				3A4E00000000000000000007 /* SuperpoweredBridgeAdapter.swift */,
+				3A4E00000000000000000008 /* SuperpoweredLiveAnalyzerBridge.h */,
+				3A4E00000000000000000009 /* SuperpoweredLiveAnalyzerBridge.mm */,
+				3A4E0000000000000000000A /* BPMNativeFieldPOC-Bridging-Header.h */,
+				3A4E0000000000000000000D /* Assets.xcassets */,
+				3A4E00000000000000000005 /* Info.plist */,
+			);
+			path = BPMNativeFieldPOC;
+			sourceTree = "<group>";
+		};
+		3A4E00000000000000000032 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				3A4E00000000000000000006 /* BPMNativeFieldPOC.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		3A4E00000000000000000033 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				3A4E0000000000000000000B /* SuperpoweredBuild.xcconfig */,
+			);
+			path = Config;
+			sourceTree = SOURCE_ROOT;
+		};
+		3A4E00000000000000000034 /* Vendor */ = {
+			isa = PBXGroup;
+			children = (
+				3A4E0000000000000000000C /* libSuperpoweredAudio.xcframework */,
+			);
+			path = Vendor;
+			sourceTree = SOURCE_ROOT;
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3A4E00000000000000000040 /* BPMNativeFieldPOC */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3A4E00000000000000000080 /* Build configuration list for PBXNativeTarget "BPMNativeFieldPOC" */;
+			buildPhases = (
+				3A4E00000000000000000065 /* Generate Superpowered Local License Header */,
+				3A4E00000000000000000050 /* Sources */,
+				3A4E00000000000000000020 /* Frameworks */,
+				3A4E00000000000000000060 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BPMNativeFieldPOC;
+			productName = BPMNativeFieldPOC;
+			productReference = 3A4E00000000000000000006 /* BPMNativeFieldPOC.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		3A4E00000000000000000070 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 2650;
+				TargetAttributes = {
+					3A4E00000000000000000040 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = 3A4E00000000000000000071 /* Build configuration list for PBXProject "BPMNativeFieldPOC" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 3A4E00000000000000000030;
+			productRefGroup = 3A4E00000000000000000032 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3A4E00000000000000000040 /* BPMNativeFieldPOC */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		3A4E00000000000000000060 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3A4E00000000000000000018 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		3A4E00000000000000000065 /* Generate Superpowered Local License Header */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Config/LocalSuperpoweredConfig.xcconfig",
+			);
+			name = "Generate Superpowered Local License Header";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/BPMSuperpoweredLocalLicense.h",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -eu\nOUTPUT=\"${DERIVED_FILE_DIR}/BPMSuperpoweredLocalLicense.h\"\nCONFIG=\"${SRCROOT}/Config/LocalSuperpoweredConfig.xcconfig\"\nKEY=\"\"\nif [ -f \"$CONFIG\" ]; then\n  KEY=$(awk -F= '/^[[:space:]]*SUPERPOWERED_LICENSE_KEY[[:space:]]*=/{value=$0; sub(/^[^=]*=[[:space:]]*/, \"\", value); gsub(/^[[:space:]]+|[[:space:]]+$/, \"\", value); print value}' \"$CONFIG\" | tail -n 1)\nfi\ncase \"$KEY\" in\n  \"\"|\"<local-evaluation-key>\"|\"your-local-evaluation-key\") KEY=\"\" ;;\nesac\nESCAPED_KEY=$(printf '%s' \"$KEY\" | sed 's/[\\\\\"]/\\\\&/g')\nmkdir -p \"${DERIVED_FILE_DIR}\"\nprintf '#ifndef BPM_SUPERPOWERED_LOCAL_LICENSE_H\\n#define BPM_SUPERPOWERED_LOCAL_LICENSE_H\\n#define BPM_SUPERPOWERED_LICENSE_KEY \"%s\"\\n#endif\\n' \"$ESCAPED_KEY\" > \"$OUTPUT\"\nchmod 600 \"$OUTPUT\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		3A4E00000000000000000050 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3A4E00000000000000000011 /* BPMNativeFieldPOCApp.swift in Sources */,
+				3A4E00000000000000000012 /* ContentView.swift in Sources */,
+				3A4E00000000000000000013 /* AudioInputMonitor.swift in Sources */,
+				3A4E00000000000000000014 /* AudioInputState.swift in Sources */,
+				3A4E00000000000000000015 /* SuperpoweredBridgeAdapter.swift in Sources */,
+				3A4E00000000000000000016 /* SuperpoweredLiveAnalyzerBridge.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		3A4E00000000000000000072 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 6V66U95F64;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		3A4E00000000000000000073 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 6V66U95F64;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		3A4E00000000000000000081 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 3A4E0000000000000000000B /* SuperpoweredBuild.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = BPMNativeFieldPOC/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.local.BPMNativeFieldPOC;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "BPMNativeFieldPOC/BPMNativeFieldPOC-Bridging-Header.h";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		3A4E00000000000000000082 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 3A4E0000000000000000000B /* SuperpoweredBuild.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = BPMNativeFieldPOC/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.local.BPMNativeFieldPOC;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "BPMNativeFieldPOC/BPMNativeFieldPOC-Bridging-Header.h";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3A4E00000000000000000071 /* Build configuration list for PBXProject "BPMNativeFieldPOC" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3A4E00000000000000000072 /* Debug */,
+				3A4E00000000000000000073 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3A4E00000000000000000080 /* Build configuration list for PBXNativeTarget "BPMNativeFieldPOC" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3A4E00000000000000000081 /* Debug */,
+				3A4E00000000000000000082 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 3A4E00000000000000000070 /* Project object */;
+}

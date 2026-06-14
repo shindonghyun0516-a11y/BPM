@@ -1,0 +1,6 @@
+// Shared Superpowered build settings.
+// LocalSuperpoweredConfig.xcconfig is read by the build phase and ignored by Git.
+// Do not include the local config here because Xcode may echo build settings in logs.
+
+SUPERPOWERED_SDK_ROOT = $(SRCROOT)/Vendor/Superpowered
+HEADER_SEARCH_PATHS = $(inherited) $(DERIVED_FILE_DIR)
