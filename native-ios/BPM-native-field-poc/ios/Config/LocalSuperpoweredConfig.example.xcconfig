@@ -1,0 +1,7 @@
+// Copy this file to LocalSuperpoweredConfig.xcconfig for local Superpowered SDK testing.
+// Do not commit LocalSuperpoweredConfig.xcconfig.
+// Do not place a real license key in this example file.
+
+SUPERPOWERED_ENABLED = YES
+SUPERPOWERED_LICENSE_KEY = <local-evaluation-key>
+SUPERPOWERED_SDK_ROOT = $(SRCROOT)/Vendor/Superpowered

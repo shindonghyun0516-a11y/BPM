@@ -1,93 +1,206 @@
-# BPM Automatic Measurement
+# BPM
 
-모바일 기기의 마이크로 주변 음악의 BPM을 자동 측정하는 모바일웹/모바일앱 프로젝트입니다.
+`BPM`은 iPhone 마이크로 현장 음악을 듣고 BPM 후보를 분석하는 Local Beta / PoC 프로젝트입니다.
 
-초기 버전은 모바일웹 MVP로 시작합니다. 사용자가 음악을 틀어놓고 측정을 시작하면, 앱은 마이크 입력을 브라우저 안에서 분석해 BPM 후보와 신뢰도를 보여줍니다.
+이 프로젝트는 처음에는 모바일웹 PoC로 시작했지만, 현장 테스트를 반복하면서 브라우저 마이크 분석과 자체 BPM 랭킹 방식만으로는 목표 사용 환경에서 충분히 안정적이지 않다는 점을 확인했습니다. 이후 네이티브 iOS Local Beta 방향으로 전환했습니다.
 
-## 현재 단계
+이 저장소는 공개 출시용 완성 제품이 아닙니다.
 
-Issue #2 기준으로 Next.js 모바일웹 프로젝트 초기화가 완료되었습니다.
+## 프로젝트 목표
 
-현재 포함된 것:
+제품 방향은 다음과 같습니다.
 
-- Next.js 프로젝트 구조
-- TypeScript 설정
-- App Router 기반 `src/app` 구조
-- 모바일웹 기준 기본 홈 화면
-- 기본 전역 스타일
-- 이후 기능 구현을 위한 `src/components`, `src/lib`, `src/types` 폴더
+- iPhone 마이크로 현장 음악이나 외부 스피커 음악을 듣는다.
+- 단일 정답이 아니라 BPM 후보를 보여준다.
+- 일반 베타 사용자 화면에서는 고급 debug 정보를 숨긴다.
+- raw audio를 저장하거나 서버로 전송하지 않는다.
 
-아직 실제 마이크 측정 기능은 동작하지 않습니다.
+주요 사용 환경:
 
-## 제품 목표
+- 재즈 클럽
+- 카페
+- 스윙댄스 연습장
+- 외부 스피커 환경
+- iPhone 마이크로 듣는 라이브 또는 현장 음악
 
-- 사용자가 버튼을 일정하게 누르지 않아도 BPM을 자동 측정한다.
-- BPM을 단일 정답처럼 보여주지 않고 후보와 신뢰도를 함께 보여준다.
-- 측정이 불안정하면 다시 측정 또는 탭 보정을 안내한다.
-- 초기 MVP에서는 오디오를 저장하지 않고 서버로 전송하지 않는다.
-- 측정 후 마이크 입력을 반드시 중지한다.
-- 모바일웹에서 먼저 검증하고, 이후 모바일앱으로 확장할 수 있게 설계한다.
+주요 장르:
 
-## 핵심 정책
+- 스윙 재즈
+- R&B
+- 뉴올리언스 리듬 앤 블루스
+- 빅밴드
 
-- 기본 측정 시간: 15초
-- 기본 BPM 범위: 10~500
-- 절반/두 배 BPM 후보를 별도 정책으로 강제하지 않음
-- BPM 결과에는 신뢰도 표시
-- 불안정 결과는 다시 측정 또는 탭 보정 안내
-- 초기 MVP에서는 오디오 저장 금지
-- 초기 MVP에서는 오디오 서버 전송 금지
-- 측정 후 마이크 입력 중지
-- 권한 거부 시 대체 안내 제공
+## 저장소 구조
 
-## 아직 구현되지 않은 것
+```text
+BPM/
+├── README.md
+├── archive/
+│   └── mobile-web/
+└── native-ios/
+    └── BPM-native-field-poc/
+```
 
-아래 기능은 아직 구현하지 않았습니다. 이후 Issue에서 순서대로 추가합니다.
+### `archive/mobile-web/`
 
-- 마이크 권한 요청
-- BPM 측정
-- 후보 BPM 계산
-- 신뢰도 계산 및 표시
-- 탭 보정
-- `harness-check`
-- Vercel 배포 연결
+초기 Next.js 모바일웹 PoC입니다.
 
-## 주요 문서
+이전 구현과 의사결정 과정을 보존하기 위해 남겨둔 영역입니다. 초기 웹 구현, harness script, 제품 문서, BPM 분석 실험 코드가 포함되어 있습니다.
 
-- [README_FOR_PM.md](README_FOR_PM.md): PM을 위한 쉬운 운영 안내
-- [AGENTS.md](AGENTS.md): Codex와 에이전트 작업 규칙
-- [WORKFLOW.md](WORKFLOW.md): Issue, Branch, PR, Harness, Deploy 흐름
-- [docs/PROJECT_DECISIONS.md](docs/PROJECT_DECISIONS.md): 확정된 프로젝트 운영 결정
-- [docs/product/PRD.md](docs/product/PRD.md): 제품 요구사항
-- [docs/product/TRD.md](docs/product/TRD.md): 기술 설계 초안
-- [docs/product/MVP_SCOPE.md](docs/product/MVP_SCOPE.md): MVP 포함/제외 범위
-- [docs/rules/audio-analysis-rules.md](docs/rules/audio-analysis-rules.md): BPM 분석 규칙
-- [docs/rules/privacy-rules.md](docs/rules/privacy-rules.md): 오디오 개인정보 규칙
-- [docs/rules/mobile-ui-rules.md](docs/rules/mobile-ui-rules.md): 모바일 UI 규칙
-- [docs/rules/testing-rules.md](docs/rules/testing-rules.md): 테스트 규칙
-- [docs/rules/harness-rules.md](docs/rules/harness-rules.md): 자동 검사 규칙
+### `native-ios/BPM-native-field-poc/`
+
+현재 Local Beta v0.1 방향의 네이티브 iOS 프로젝트입니다.
+
+이 앱은 다음을 사용합니다.
+
+- SwiftUI
+- `AVAudioSession`
+- `AVAudioEngine`
+- Objective-C++ bridge를 통한 Superpowered LiveAnalyzer
+- 메모리 기반 오디오 처리
+
+## 문제 정의
+
+초기 제품 질문은 단순했습니다.
+
+> 사용자가 직접 Tap Tempo를 하지 않아도, 방 안에서 재생 중인 음악의 BPM을 앱이 자동으로 추정할 수 있는가?
+
+일반적인 대안은 목표 워크플로우와 맞지 않았습니다.
+
+- Tap Tempo는 사용자가 음악을 듣는 흐름을 끊는다.
+- 스트리밍 환경에서는 로컬 오디오 파일을 항상 확보할 수 없다.
+- 링크 조회나 데이터베이스 조회는 실제 공간, 스피커, 라이브 연주의 상태를 반영하지 못한다.
+- 모바일웹 마이크 분석은 현장과 유사한 테스트에서 충분히 안정적이지 않았다.
+
+## 제품 의사결정 흐름
+
+1. 모바일웹 BPM 실험으로 시작했다.
+2. 브라우저 마이크 입력과 로컬 BPM 분석을 테스트했다.
+3. 마이크와 오디오 파이프라인을 더 직접 제어하기 위해 네이티브 iOS로 전환했다.
+4. 네이티브 PoC-1부터 PoC-4까지 진행했다.
+5. 네이티브 마이크 입력이 정상적으로 들어오는 것을 확인했다.
+6. 자체 local peak / periodicity 랭킹 방식은 충분히 안정적이지 않다는 것을 확인했다.
+7. 실패한 PoC-4 buffer periodicity 실험을 연구 기록으로 보존했다.
+8. Superpowered LiveAnalyzer Spike를 진행했다.
+9. 메트로놈과 reference track에서 더 강한 결과를 확인했다.
+10. 약 10명 제한의 로컬 개발자 설치 beta 방향으로 이동했다.
+
+## Local Beta v0.1
+
+현재 iOS beta 범위는 의도적으로 좁게 유지합니다.
+
+- Xcode 기반 로컬 설치만 진행
+- 약 10명 테스트 사용자
+- App Store 출시 없음
+- TestFlight 외부 beta 없음
+- 계정 시스템 없음
+- 클라우드 저장 없음
+- 서버 기반 오디오 분석 없음
+
+사용자 흐름:
+
+1. 측정을 시작한다.
+2. 기본 측정 시간 동안 음악을 듣는다.
+3. 대표 BPM 후보를 정수로 크게 표시한다.
+4. 후보가 불안정하면 더 긴 시간으로 다시 측정할 수 있다.
+
+Half / Base / Double 후보, Superpowered raw output, 기존 자체 PoC baseline 값은 일반 사용자 화면에 노출하지 않고 설정/debug 화면 뒤에 둡니다.
+
+## 주요 기능
+
+- 네이티브 iOS 마이크 입력
+- 기본 35초 자동 측정
+- 불안정 후보를 위한 50초 재측정 흐름
+- 큰 정수 BPM 후보 표시
+- Input Stability 그래프
+- Stitch mockup을 참고한 한국어 Local Beta UI
+- PM QA를 위한 debug/settings 화면
+- Superpowered LiveAnalyzer experimental engine
+- 기존 자체 PoC baseline은 debug/reference 용도로만 보존
+
+## 기술 접근
+
+네이티브 iOS:
+
+- Local Beta UI: SwiftUI
+- 마이크 세션 제어: `AVAudioSession`
+- 마이크 buffer 입력: `AVAudioEngine` input tap
+- Superpowered LiveAnalyzer 연결: Objective-C++ bridge
+- iPhone mono 마이크 입력을 Superpowered 처리 형식에 맞게 변환
+- debug에는 숫자형 요약값만 표시
+
+이전 모바일웹 lane:
+
+- Next.js
+- TypeScript
+- 브라우저 마이크 실험
+- 로컬 BPM 분석 prototype
+- privacy / BPM UI harness script
+
+## 개인정보 원칙
+
+개인정보와 오디오 처리 원칙은 제품 설계의 일부입니다.
+
+- raw audio를 저장하지 않는다.
+- raw audio를 서버로 전송하지 않는다.
+- raw audio sample을 debug output에 출력하지 않는다.
+- Superpowered SDK 파일은 이 저장소에 커밋하지 않는다.
+- 로컬 Superpowered license key는 이 저장소에 커밋하지 않는다.
+- 로컬 Superpowered config는 Git에서 제외한다.
+
+보호되는 local-only 경로:
+
+```text
+native-ios/BPM-native-field-poc/ios/Vendor/Superpowered/
+native-ios/BPM-native-field-poc/ios/Config/LocalSuperpoweredConfig.xcconfig
+```
 
 ## 로컬 실행 방법
 
-처음 한 번 패키지를 설치합니다.
+### 네이티브 iOS
 
-```bash
-npm install
+Xcode에서 아래 project를 엽니다.
+
+```text
+native-ios/BPM-native-field-poc/ios/BPMNativeFieldPOC.xcodeproj
 ```
 
-개발 서버를 실행합니다.
+마이크 QA는 실제 iPhone에서 진행해야 합니다. 시뮬레이터는 기본 UI 확인 용도로만 적합합니다.
+
+Superpowered local setup:
+
+1. Superpowered SDK를 로컬에 직접 다운로드한다.
+2. 아래 경로에 배치한다.
+
+```text
+native-ios/BPM-native-field-poc/ios/Vendor/Superpowered/
+```
+
+3. 아래 파일을 복사한다.
+
+```text
+native-ios/BPM-native-field-poc/ios/Config/LocalSuperpoweredConfig.example.xcconfig
+```
+
+복사한 파일 이름:
+
+```text
+native-ios/BPM-native-field-poc/ios/Config/LocalSuperpoweredConfig.xcconfig
+```
+
+4. 로컬 evaluation key는 `LocalSuperpoweredConfig.xcconfig`에만 입력한다.
+5. 실제 key는 절대 커밋하지 않는다.
+6. SDK binary나 header도 절대 커밋하지 않는다.
+
+### 보존된 모바일웹 PoC
 
 ```bash
+cd archive/mobile-web
+npm install
 npm run dev
 ```
 
-브라우저에서 아래 주소를 엽니다.
-
-```text
-http://localhost:3000
-```
-
-빌드와 lint를 확인합니다.
+build와 check:
 
 ```bash
 npm run build
@@ -95,63 +208,49 @@ npm run lint
 npm test --if-present
 ```
 
-## 주요 폴더 구조
+## Harness
 
-```text
-src/
-  app/
-    layout.tsx
-    page.tsx
-    globals.css
-  components/
-  lib/
-  types/
+네이티브 iOS Local Beta용 안전 검사는 아래 script를 사용합니다.
+
+```bash
+scripts/harness/native-ios-check.sh --scan-only
 ```
 
-폴더 역할:
+이 검사는 다음을 확인합니다.
 
-- `src/app`: Next.js App Router 화면과 전역 스타일
-- `src/components`: 이후 화면 구성 요소를 둘 위치
-- `src/lib`: 이후 BPM 분석, 개인정보 검사, 공통 로직을 둘 위치
-- `src/types`: 이후 BPM 결과, 신뢰도, 측정 상태 타입을 둘 위치
+- Superpowered SDK가 tracked 대상이 아닌지
+- `LocalSuperpoweredConfig.xcconfig`가 tracked 대상이 아닌지
+- 실제 license key가 tracked file에 없는지
+- raw audio 파일이 없는지
+- raw audio 저장 / 서버 전송 위험 코드가 없는지
+- Xcode local artifact가 tracked 대상이 아닌지
 
-## 초기 개발 순서
+Local Full Mode에서는 Superpowered SDK와 local config가 로컬에 준비된 상태에서 `xcodebuild`까지 실행합니다.
 
-1. 제품 문서 확정
-2. GitHub Issue 생성
-3. 모바일웹 프로젝트 초기화
-4. 마이크 권한 요청 화면 구현
-5. 측정 흐름 구현
-6. BPM 후보와 신뢰도 계산 구현
-7. 불안정 결과 안내와 탭 보정 구현
-8. 오디오 저장/전송 금지와 마이크 중지 검증
-9. Harness 자동 검사 연결
-10. PR 리뷰와 배포 자동화 연결
+```bash
+scripts/harness/native-ios-check.sh
+```
 
-## 다음 Issue
+## 현재 한계
 
-1. Issue #3: `harness-check` 기본 검사 구성
-2. Issue #4: V0 BPM 측정 프로토타입 구현
+- 이 프로젝트는 Local Beta / PoC 프로젝트이며, 공개 출시용 완성 제품이 아니다.
+- Superpowered SDK는 로컬에 필요하지만 저장소에는 포함되어 있지 않다.
+- SDK 기반 build에는 로컬 Superpowered evaluation key가 필요하다.
+- evaluation 사용은 상용 출시 승인으로 보지 않는다.
+- BPM은 여전히 확정값이 아니라 후보로 표시한다.
+- 현장 Field QA는 계속 진행 중이다.
+- 고속 스윙이나 빅밴드 곡에서는 half-time 또는 double-time 해석이 발생할 수 있다.
 
-Issue #3에서는 build, lint, test, privacy check 같은 기본 자동 검사를 준비합니다.
+## 프로젝트 기록
 
-Issue #4에서는 마이크 입력 기반 BPM 측정 흐름을 처음으로 구현합니다.
+이 저장소는 다음 과정을 기록합니다.
 
-## 배포 방향
+- PM 주도의 제품 의사결정
+- PoC 기반 기술 검증
+- 실패 실험을 학습 자산으로 보존한 과정
+- 모바일웹에서 네이티브 iOS로 피벗한 과정
+- 자체 오디오 분석에서 검증된 네이티브 엔진으로 피벗한 과정
+- 마이크 기반 제품에서 raw audio를 저장/전송하지 않는 privacy-first 원칙
+- 공개 출시 전 로컬 beta 전략
 
-초기 모바일웹 MVP 배포 플랫폼은 Vercel로 결정합니다. GitHub main 브랜치 병합 후 Vercel production 배포를 목표로 합니다.
-
-이유:
-
-- 모바일웹 MVP를 빠르게 배포하기 쉽습니다.
-- GitHub와 연결해 PR별 preview 확인이 쉽습니다.
-- Next.js를 사용할 경우 배포 구조가 단순합니다.
-- 혼자 하는 프로젝트에서 설정 부담이 적습니다.
-
-배포 전에는 `harness-check.yml`이 통과해야 합니다. PR 단계에서는 Vercel preview 배포를 확인할 수 있어야 합니다.
-
-단, Cloudflare Pages는 기본 배포 플랫폼이 아니라 대안으로만 문서에 기록합니다. 프로젝트를 단순 React/Vite 정적 앱으로 만들 경우에만 Cloudflare Pages를 검토합니다.
-
-## 개인정보 원칙
-
-초기 MVP에서는 오디오를 저장하지 않습니다. 오디오를 서버로 전송하지도 않습니다. BPM 분석은 사용자의 기기 안에서만 수행합니다.
+이 프로젝트의 핵심 이야기는 첫 알고리즘이 성공했다는 것이 아닙니다. 현장 테스트를 통해 초기 접근의 한계를 발견했고, 그 증거를 바탕으로 제품 방향을 바꿨다는 점입니다.

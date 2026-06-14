@@ -7,6 +7,10 @@ import {
   analyzeEnergySamples,
   calculateSignalEnergy
 } from "@/lib/bpm-analysis";
+import {
+  analyzeExperimentalTempo,
+  type ExperimentalTempoReport
+} from "@/lib/bpm-experimental";
 import type { BpmAnalysisSuccess, EnergySample, MeasurementStatus } from "@/types/app";
 
 type AudioContextWindow = Window & {
@@ -23,6 +27,9 @@ export default function Home() {
   const [result, setResult] = useState<BpmAnalysisSuccess | null>(null);
   const [unstableReason, setUnstableReason] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [debugEnabled, setDebugEnabled] = useState(false);
+  const [experimentalReport, setExperimentalReport] =
+    useState<ExperimentalTempoReport | null>(null);
 
   const statusRef = useRef<MeasurementStatus>("idle");
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -40,6 +47,10 @@ export default function Home() {
   useEffect(() => {
     statusRef.current = screen;
   }, [screen]);
+
+  useEffect(() => {
+    setDebugEnabled(new URLSearchParams(window.location.search).get("debug") === "1");
+  }, []);
 
   const cleanupMeasurement = useCallback(() => {
     if (sampleTimerRef.current !== null) {
@@ -88,6 +99,7 @@ export default function Home() {
     setResult(null);
     setUnstableReason("");
     setErrorMessage("");
+    setExperimentalReport(null);
     setRemainingSeconds(INITIAL_REMAINING_SECONDS);
   }, []);
 
@@ -100,8 +112,12 @@ export default function Home() {
   const finishMeasurement = useCallback(() => {
     const samples = [...energySamplesRef.current];
     const outcome = analyzeEnergySamples(samples);
+    const nextExperimentalReport = debugEnabled
+      ? analyzeExperimentalTempo(samples, outcome)
+      : null;
 
     cleanupMeasurement();
+    setExperimentalReport(nextExperimentalReport);
 
     if (outcome.kind === "result") {
       setResult(outcome);
@@ -113,7 +129,7 @@ export default function Home() {
     setResult(null);
     setUnstableReason(outcome.reason);
     setScreen("unstable-result");
-  }, [cleanupMeasurement]);
+  }, [cleanupMeasurement, debugEnabled]);
 
   const collectEnergySample = useCallback(() => {
     const analyser = analyserNodeRef.current;
@@ -410,6 +426,8 @@ export default function Home() {
           참고 후보로 확인해 주세요.
         </p>
       </section>
+
+      {debugEnabled && <ExperimentalPanel report={experimentalReport} />}
     </main>
   );
 }
@@ -430,5 +448,112 @@ function StatusBadge({ screen }: { screen: MeasurementStatus }) {
       <span className="status-dot" aria-hidden="true" />
       <span>{labels[screen]}</span>
     </div>
+  );
+}
+
+function ExperimentalPanel({ report }: { report: ExperimentalTempoReport | null }) {
+  if (!report) {
+    return (
+      <section className="debug-panel" aria-labelledby="experimental-title">
+        <h2 id="experimental-title">실험 분석 비교</h2>
+        <p>
+          ?debug=1에서만 표시됩니다. 측정을 완료하면 기존 V0 결과와 onset envelope 기반
+          실험 분석 결과를 비교합니다.
+        </p>
+      </section>
+    );
+  }
+
+  const experimental = report.experimental;
+  const strongestCandidate =
+    experimental.kind === "candidate"
+      ? `${experimental.strongestCandidate.bpm} BPM`
+      : "없음";
+  const otherCandidates =
+    experimental.kind === "candidate" && experimental.otherCandidates.length > 0
+      ? experimental.otherCandidates
+          .slice(0, 5)
+          .map((candidate) => `${candidate.bpm} BPM (${candidate.relation})`)
+          .join(", ")
+      : "없음";
+
+  return (
+    <section className="debug-panel" aria-labelledby="experimental-title">
+      <h2 id="experimental-title">실험 분석 비교</h2>
+      <p>
+        ?debug=1에서만 표시됩니다. 기본 사용자 화면은 기존 V0 결과를 유지하며, 아래
+        값은 Spike 판단용 비교 정보입니다.
+      </p>
+
+      <dl className="debug-list">
+        <div>
+          <dt>기존 V0 결과</dt>
+          <dd>
+            {report.v0.resultText}
+            {report.v0.reason ? ` (${report.v0.reason})` : ""}
+          </dd>
+        </div>
+        <div>
+          <dt>실험 분석 결과</dt>
+          <dd>{experimental.kind === "candidate" ? "후보 생성" : "후보 없음"}</dd>
+        </div>
+        <div>
+          <dt>가장 강한 후보</dt>
+          <dd>{strongestCandidate}</dd>
+        </div>
+        <div>
+          <dt>다른 후보</dt>
+          <dd>{otherCandidates}</dd>
+        </div>
+        <div>
+          <dt>판단</dt>
+          <dd>
+            {report.judgement} - {report.judgementReason}
+          </dd>
+        </div>
+        <div>
+          <dt>132 쏠림 여부</dt>
+          <dd>{report.bias132Status}</dd>
+        </div>
+        <div>
+          <dt>무음에서 후보 표시 여부</dt>
+          <dd>{report.silenceFalsePositiveStatus}</dd>
+        </div>
+        <div>
+          <dt>Onset envelope peak</dt>
+          <dd>{experimental.envelopePeakCount}</dd>
+        </div>
+        <div>
+          <dt>BPM 후보 투표</dt>
+          <dd>
+            {experimental.histogramBucketCount}개 bucket - 여러 간격이 같은 BPM 후보를 지지한
+            횟수입니다.
+          </dd>
+        </div>
+        <div>
+          <dt>주기성 점수</dt>
+          <dd>
+            {experimental.periodicityTopCandidates.length > 0
+              ? experimental.periodicityTopCandidates
+                  .slice(0, 3)
+                  .map(
+                    (candidate) =>
+                      `${candidate.bpm} BPM ${candidate.periodicityScore.toFixed(2)}`
+                  )
+                  .join(", ")
+              : "없음"}{" "}
+            - 같은 간격의 리듬이 반복되는 정도입니다.
+          </dd>
+        </div>
+        <div>
+          <dt>실패 또는 판단 불가 사유</dt>
+          <dd>{experimental.reason}</dd>
+        </div>
+        <div>
+          <dt>Go / Pivot / Stop 메모</dt>
+          <dd>{report.goPivotStopNote}</dd>
+        </div>
+      </dl>
+    </section>
   );
 }

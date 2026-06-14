@@ -23,3 +23,28 @@ pnpm-debug.log*
 
 # OS/editor
 .DS_Store
+
+# Xcode / iOS local state
+DerivedData/
+*.xcuserstate
+*.xcuserdatad/
+xcuserdata/
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+
+# Superpowered local SDK and license config
+native-ios/BPM-native-field-poc/ios/Vendor/Superpowered/
+native-ios/BPM-native-field-poc/ios/Config/LocalSuperpoweredConfig.xcconfig
+
+# Protect the same paths if the native project is opened from a different root
+ios/Vendor/Superpowered/
+ios/Config/LocalSuperpoweredConfig.xcconfig
+
+# Audio files must not be committed
+*.wav
+*.m4a
+*.mp3
+*.caf
+*.aiff
+*.flac
