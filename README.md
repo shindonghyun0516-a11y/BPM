@@ -111,6 +111,7 @@ BPM/
 - 약 10명 테스트 사용자
 - App Store 출시 없음
 - TestFlight 외부 beta 없음
+- Vercel 배포 없음
 - 계정 시스템 없음
 - 클라우드 저장 없음
 - 서버 기반 오디오 분석 없음
@@ -123,6 +124,19 @@ BPM/
 4. 후보가 불안정하면 더 긴 시간으로 다시 측정할 수 있다.
 
 Half / Base / Double 후보, Superpowered raw output, 기존 자체 PoC baseline 값은 일반 사용자 화면에 노출하지 않고 설정/debug 화면 뒤에 둡니다.
+
+## 배포 상태
+
+현재 메인 배포 경로는 native iOS Local Beta입니다.
+
+- iPhone 로컬 개발자 설치와 실기기 QA를 기준으로 운영합니다.
+- Vercel은 현재 메인 제품 배포 경로가 아닙니다.
+- Vercel check 실패는 native iOS Local Beta 변경의 필수 차단 조건으로 보지 않습니다.
+- 웹 PoC preview가 다시 필요하면 별도 Issue에서 `archive/mobile-web/` root 설정을 검토합니다.
+
+관련 결정 문서:
+
+- [Archive Web PoC Vercel 설정 정리 결정](docs/deploy/archive-web-vercel-decision.md)
 
 ## 주요 기능
 
