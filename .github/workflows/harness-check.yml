@@ -1,0 +1,62 @@
+name: harness-check
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  web-archive-harness-check:
+    name: web-archive-harness-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    defaults:
+      run:
+        working-directory: archive/mobile-web
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: archive/mobile-web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test --if-present
+
+      - name: Privacy check
+        run: node scripts/harness/privacy-check.mjs
+
+      - name: BPM result UI check
+        run: node scripts/harness/bpm-ui-check.mjs
+
+  native-ios-safety-check:
+    name: native-ios-safety-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Native iOS safety scan
+        run: bash scripts/harness/native-ios-check.sh --scan-only

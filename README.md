@@ -1,6 +1,6 @@
 # BPM
 
-`BPM`은 iPhone 마이크로 현장 음악을 듣고 BPM 후보를 분석하는 포트폴리오 / Local Beta 프로젝트입니다.
+`BPM`은 iPhone 마이크로 현장 음악을 듣고 BPM 후보를 분석하는 Local Beta / PoC 프로젝트입니다.
 
 이 프로젝트는 처음에는 모바일웹 PoC로 시작했지만, 현장 테스트를 반복하면서 브라우저 마이크 분석과 자체 BPM 랭킹 방식만으로는 목표 사용 환경에서 충분히 안정적이지 않다는 점을 확인했습니다. 이후 네이티브 iOS Local Beta 방향으로 전환했습니다.
 
@@ -45,7 +45,7 @@ BPM/
 
 초기 Next.js 모바일웹 PoC입니다.
 
-포트폴리오 맥락과 의사결정 과정을 보여주기 위해 보존했습니다. 초기 웹 구현, harness script, 제품 문서, BPM 분석 실험 코드가 포함되어 있습니다.
+이전 구현과 의사결정 과정을 보존하기 위해 남겨둔 영역입니다. 초기 웹 구현, harness script, 제품 문서, BPM 분석 실험 코드가 포함되어 있습니다.
 
 ### `native-ios/BPM-native-field-poc/`
 
@@ -233,7 +233,7 @@ scripts/harness/native-ios-check.sh
 
 ## 현재 한계
 
-- 이 프로젝트는 포트폴리오 / Local Beta 프로젝트이며, 공개 출시용 완성 제품이 아니다.
+- 이 프로젝트는 Local Beta / PoC 프로젝트이며, 공개 출시용 완성 제품이 아니다.
 - Superpowered SDK는 로컬에 필요하지만 저장소에는 포함되어 있지 않다.
 - SDK 기반 build에는 로컬 Superpowered evaluation key가 필요하다.
 - evaluation 사용은 상용 출시 승인으로 보지 않는다.
@@ -241,9 +241,9 @@ scripts/harness/native-ios-check.sh
 - 현장 Field QA는 계속 진행 중이다.
 - 고속 스윙이나 빅밴드 곡에서는 half-time 또는 double-time 해석이 발생할 수 있다.
 
-## 포트폴리오 관점
+## 프로젝트 기록
 
-이 저장소는 다음을 보여주기 위한 포트폴리오 기록입니다.
+이 저장소는 다음 과정을 기록합니다.
 
 - PM 주도의 제품 의사결정
 - PoC 기반 기술 검증
