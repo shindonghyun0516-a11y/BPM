@@ -1,45 +1,51 @@
 # Superpowered Setup
 
-This document describes the local-only setup for the Superpowered LiveAnalyzer Spike.
+이 문서는 Superpowered LiveAnalyzer Spike를 위한 로컬 전용 setup 방법을 설명합니다.
 
-The current committed app must build without the Superpowered SDK installed. Until the SDK is configured locally, the app shows `Superpowered SDK not configured` in the experimental panel.
+현재 커밋된 앱은 Superpowered SDK가 설치되지 않은 환경에서도 build가 가능해야 합니다. SDK가 로컬에 설정되기 전에는 experimental panel에 `Superpowered SDK not configured` 상태가 표시됩니다.
 
-## Rules
+## 기본 규칙
 
-- Do not commit the Superpowered SDK binary or headers.
-- Do not commit a real license key.
-- Do not print the license key in logs.
-- Do not show the license key on screen.
-- Do not store raw audio.
-- Do not upload raw audio.
-- Do not print raw audio samples in debug output.
-- Do not ship this Spike through App Store, TestFlight external distribution, or customer release without a separate PM decision.
+- Superpowered SDK binary 또는 header를 커밋하지 않습니다.
+- 실제 license key를 커밋하지 않습니다.
+- license key를 log에 출력하지 않습니다.
+- license key를 화면에 표시하지 않습니다.
+- raw audio를 저장하지 않습니다.
+- raw audio를 서버로 전송하지 않습니다.
+- raw audio sample을 debug output에 출력하지 않습니다.
+- 별도 PM 결정 없이 이 Spike를 App Store, TestFlight 외부 배포, 대고객 출시로 진행하지 않습니다.
 
-## Local SDK Location
+## 로컬 SDK 위치
 
-Place the SDK locally under:
+통합 repo 기준 SDK는 아래 경로에 로컬로만 배치합니다.
+
+```text
+native-ios/BPM-native-field-poc/ios/Vendor/Superpowered/
+```
+
+native iOS 프로젝트 내부 상대 경로는 아래와 같습니다.
 
 ```text
 ios/Vendor/Superpowered/
 ```
 
-This path is ignored by Git.
+이 경로는 Git 추적에서 제외됩니다.
 
-## Local Config
+## Local config
 
-Copy the example config:
-
-```text
-ios/Config/LocalSuperpoweredConfig.example.xcconfig
-```
-
-to:
+example config를 복사합니다.
 
 ```text
-ios/Config/LocalSuperpoweredConfig.xcconfig
+native-ios/BPM-native-field-poc/ios/Config/LocalSuperpoweredConfig.example.xcconfig
 ```
 
-Then edit the local file only.
+아래 local config 파일을 만듭니다.
+
+```text
+native-ios/BPM-native-field-poc/ios/Config/LocalSuperpoweredConfig.xcconfig
+```
+
+그 다음 local config 파일만 수정합니다.
 
 ```text
 SUPERPOWERED_ENABLED = YES
@@ -47,28 +53,28 @@ SUPERPOWERED_LICENSE_KEY = your-local-evaluation-key
 SUPERPOWERED_SDK_ROOT = $(SRCROOT)/Vendor/Superpowered
 ```
 
-`LocalSuperpoweredConfig.xcconfig` is ignored by Git.
+`LocalSuperpoweredConfig.xcconfig`는 Git 추적에서 제외됩니다.
 
-## Current Stub State
+## 현재 stub 상태
 
-The committed Spike starts with a stub analyzer:
+커밋된 Spike는 stub analyzer로 시작합니다.
 
 - SDK status: `not configured`
 - Superpowered BPM: `-`
 - Superpowered silence: `-`
 - Failure reason: `Superpowered SDK not configured`
 
-The stub is intentional. It protects the existing native microphone PoC from build failures on machines where the SDK is not installed.
+이 stub은 의도된 구조입니다. SDK가 설치되지 않은 Mac에서도 기존 native microphone PoC가 build 실패로 깨지지 않도록 보호합니다.
 
-## Next Integration Step
+## 다음 통합 단계
 
-After the stub build passes, the next implementation step is an Objective-C++ bridge that wraps Superpowered LiveAnalyzer.
+stub build가 통과한 뒤 다음 구현 단계는 Superpowered LiveAnalyzer를 감싸는 Objective-C++ bridge입니다.
 
-Expected bridge files:
+예상 bridge 파일:
 
 ```text
 SuperpoweredLiveAnalyzerBridge.h
 SuperpoweredLiveAnalyzerBridge.mm
 ```
 
-The bridge must keep the existing `AVAudioEngine` input tap. It should not replace the input pipeline with SuperpoweredIOSAudioIO in the first Spike.
+bridge는 기존 `AVAudioEngine` input tap을 유지해야 합니다. 첫 Spike 단계에서 input pipeline을 `SuperpoweredIOSAudioIO`로 교체하지 않습니다.
